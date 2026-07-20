@@ -1,6 +1,6 @@
-# TimePilot – Zeiterfassung mit Browser- und Datenbankmodus
+# Zeiterfassung mit Browser- und Datenbankmodus
 
-TimePilot ist eine deutschsprachige Zeiterfassungs-App. Beim Start kann zwischen zwei technisch getrennten Speicherarten gewählt werden. Optional kann die Auswahl auf dem Gerät gespeichert werden:
+Beim Start kann zwischen zwei technisch getrennten Speicherarten gewählt werden. Optional kann die Auswahl auf dem Gerät gespeichert werden:
 
 - **Browser-Daten:** funktioniert ohne Server und speichert ausschließlich im aktuellen Browserprofil.
 - **Datenbank-Server:** Anmeldung mit eigener E-Mail-Adresse und Passwort; alle Daten werden benutzergetrennt in PostgreSQL gespeichert.
