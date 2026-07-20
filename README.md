@@ -1,6 +1,6 @@
-# TimePilot – lokale Zeiterfassung
+# Zeiterfassun
 
-TimePilot ist ein lokal startbares MVP für persönliche Arbeitszeiterfassung. Die Anwendung läuft als React-Web-App im Browser und speichert die Daten im lokalen Browserprofil.
+Diese App ist ein lokal startbarer Prototyp für persönliche Arbeitszeiterfassung. Die Anwendung läuft als React-Web-App im Browser und speichert die Daten im lokalen Browserprofil.
 
 ## Enthaltene Funktionen
 
