@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: timepilot
+      POSTGRES_USER: timepilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+    volumes:
+      - timepilot_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timepilot -d timepilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: timepilot
+      PGUSER: timepilot
+      PGPASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      PORT: 3001
+      HOST: 0.0.0.0
+      CORS_ORIGINS: http://localhost:3001,http://127.0.0.1:3001
+      SESSION_DAYS: 30
+    ports:
+      - "3001:3001"
+
+volumes:
+  timepilot_postgres_data:

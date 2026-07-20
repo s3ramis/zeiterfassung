@@ -1,16 +1,24 @@
 {
-  "name": "timepilot-mvp",
+  "name": "timepilot-dual-mode",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:web": "vite",
+    "dev:server": "node --watch server/src/index.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "start": "node server/src/index.mjs",
+    "server": "node server/src/index.mjs",
+    "db:migrate": "node server/scripts/migrate.mjs",
+    "db:reset": "node server/scripts/reset.mjs",
+    "check": "tsc --noEmit && node --test server/src/*.test.mjs",
+    "dev:full": "node scripts/dev.mjs"
   },
   "dependencies": {
     "jspdf": "^3.0.0",
+    "pg": "^8.13.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

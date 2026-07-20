@@ -1,100 +1,164 @@
-# TimePilot – lokale Zeiterfassung
+# TimePilot – Zeiterfassung mit Browser- und Datenbankmodus
 
-TimePilot ist ein lokal startbares MVP für persönliche Arbeitszeiterfassung. Die Anwendung läuft als React-Web-App im Browser und speichert die Daten im lokalen Browserprofil.
+TimePilot ist eine deutschsprachige Zeiterfassungs-App. Beim Start kann zwischen zwei technisch getrennten Speicherarten gewählt werden. Optional kann die Auswahl auf dem Gerät gespeichert werden:
+
+- **Browser-Daten:** funktioniert ohne Server und speichert ausschließlich im aktuellen Browserprofil.
+- **Datenbank-Server:** Anmeldung mit eigener E-Mail-Adresse und Passwort; alle Daten werden benutzergetrennt in PostgreSQL gespeichert.
+
+Beide Modi verwenden dieselbe Oberfläche, dieselbe Berechnungslogik und denselben Funktionsumfang.
 
 ## Enthaltene Funktionen
 
 - Einstempeln, Pausenbeginn, Pausenende und Ausstempeln
-- Live-Anzeige der Nettoarbeitszeit ohne Pausen
-- Speicherung aller Stempelereignisse nach Datum
-- Monatskalender mit Arbeitstagen, Wochenenden und Feiertagen
-- Feiertage nach deutschem Bundesland über OpenHolidays API
-- Offline-Fallback für bundesweite Feiertage
-- Arbeitspläne mit täglicher Sollzeit und Gültigkeitszeitraum
-- Überstunden- und Minusstundenberechnung
-- Urlaub, Krankheit und Überstundenausgleich von/bis Datum
+- Live-Anzeige der Nettoarbeitszeit
+- manuelle Zeiteinträge und Korrekturen
 - Tagesnotizen
-- Jahresurlaubskontingent und automatische Resturlaubsberechnung
-- Vorschlag eines Ausgleichstags auf Basis des Zeitguthabens
-- Manuelle Bestätigung vor Eintragung des Ausgleichstags
-- Manuelle Korrektur von Start, Ende und Pause pro Tag
-- PDF-Monatsexport
-- JSON-Datensicherung und Wiederherstellung
-- Installierbare PWA im Produktionsmodus
+- Monatskalender mit Arbeitstagen, Wochenenden und Feiertagen
+- Feiertage nach deutschem Bundesland über OpenHolidays API mit Offline-Fallback
+- datierte Arbeitspläne mit täglicher Sollstundenverteilung
+- Über- und Minusstundenberechnung
+- Urlaub, Krankheit und Überstundenausgleich
+- Jahresurlaubskontingent und Resturlaub
+- bestätigungspflichtige Vorschläge für Überstundenausgleich
+- PDF-Export des ausgewählten Monats
+- JSON-Backup und Wiederherstellung in beiden Speicherarten
+- installierbare PWA im Produktionsbetrieb
+- E-Mail/Passwort-Registrierung ohne externen Authentifizierungsanbieter
 
-## Schnellstart
+## Schnellstart ohne Datenbank
 
-Voraussetzung: Node.js 22.12 oder neuer. Empfohlen wird Node.js 24 LTS.
+Voraussetzungen:
+
+- Node.js 22.12 oder neuer; empfohlen Node.js 24 LTS
+- npm
+- moderner Browser
 
 ```bash
 npm install
 npm run dev
 ```
 
-Alternativ unter Windows `start-windows.cmd` doppelt anklicken oder unter macOS/Linux `./start.sh` ausführen.
+Anschließend `http://localhost:5173` öffnen und **Browser-Daten** auswählen.
 
-Danach im Browser öffnen:
+Windows kann alternativ `start-windows.cmd`, macOS/Linux `./start.sh` verwenden.
 
-```text
-http://localhost:5173
-```
+## Schnellstart mit PostgreSQL
 
-Die ausführliche Anleitung steht in [INSTALLATION.md](./INSTALLATION.md).
+Die ausführliche Anleitung steht in [DATABASE_SETUP.md](DATABASE_SETUP.md).
 
-## Produktionsbuild testen
+Kurzfassung für die lokale Entwicklung:
 
 ```bash
-npm run build
-npm run preview
+cp .env.example .env
+# Windows: copy .env.example .env
+
+docker compose up -d
+npm install
+npm run dev:full
 ```
 
-Danach:
+Danach `http://localhost:5173` öffnen, **Datenbank-Server** auswählen und als API-Adresse verwenden:
 
 ```text
-http://localhost:4173
+http://localhost:3001/api
 ```
 
-Im Produktionsbuild wird der Service Worker registriert. Dadurch kann die Anwendung in unterstützten Browsern als App installiert und nach dem ersten Laden weitgehend offline geöffnet werden.
+Beim ersten Aufruf wird über die Oberfläche ein Konto mit Anzeigename, E-Mail-Adresse und Passwort angelegt.
 
-## Datenspeicherung
+## Komplettbetrieb mit Docker
 
-Die Daten liegen in `localStorage` des verwendeten Browserprofils. Das ist für einen lokalen Einzelbenutzer-Test geeignet, aber nicht für eine produktive Mehrbenutzerlösung.
+Diese Variante baut das Frontend und startet App-Server und PostgreSQL gemeinsam:
 
-Regelmäßig unter **Einstellungen → JSON-Backup exportieren** sichern.
+```bash
+cp .env.example .env
+# In .env unbedingt POSTGRES_PASSWORD ändern.
+docker compose -f docker-compose.full.yml up --build
+```
 
-Beim Löschen von Browserdaten, Wechsel des Browserprofils oder Wechsel des Rechners gehen lokale Daten ohne Backup verloren.
+Danach `http://localhost:3001` öffnen. Die Standard-API-Adresse lautet dort automatisch `http://localhost:3001/api`.
 
-## Feiertage
+## Wichtige npm-Befehle
 
-Die App ruft Feiertage über folgende API ab:
+| Befehl | Zweck |
+|---|---|
+| `npm run dev` | nur Frontend; Browser-Modus ohne Datenbank |
+| `npm run dev:full` | Frontend und API für lokale Entwicklung |
+| `npm run dev:server` | nur API mit automatischem Neustart |
+| `npm run build` | TypeScript prüfen und Produktionsfrontend bauen |
+| `npm start` | API starten und vorhandenes `dist/` ausliefern |
+| `npm run db:migrate` | ausstehende SQL-Migrationen anwenden |
+| `npm run db:reset` | alle Benutzer und Daten nach Bestätigung löschen |
+| `npm run check` | TypeScript- und Servertests ausführen |
+
+Der Server führt ausstehende Migrationen auch bei jedem Start automatisch aus.
+
+## Architektur
 
 ```text
-https://openholidaysapi.org/PublicHolidays
+React + TypeScript + Vite
+          │
+          ├── BrowserDataStore ── localStorage
+          │
+          └── ServerDataStore ── HTTP/JSON API
+                                   │
+                                   ├── eigene E-Mail/Passwort-Authentifizierung
+                                   ├── serverseitige Sitzungen
+                                   └── PostgreSQL
 ```
 
-Die Ergebnisse werden nach Jahr und Bundesland lokal zwischengespeichert. Ist die API nicht erreichbar, verwendet die App einen Offline-Fallback mit bundesweiten Feiertagen. Regionale Feiertage fehlen dann, bis die API wieder erreichbar ist.
+Die Oberfläche arbeitet immer mit demselben `AppData`-Modell. Die beiden Adapter in `src/lib/data-store.ts` kapseln die Speicherart. Dadurch bleiben Kalender, Berechnungen, PDF-Export und JSON-Import unabhängig vom gewählten Speicher.
+
+Im Servermodus werden die Daten nicht als einzelner JSON-Blob gespeichert. PostgreSQL verwendet getrennte Tabellen für:
+
+- Benutzer und Sitzungen
+- Zeitereignisse
+- Abwesenheiten
+- Arbeitspläne und Wochentage
+- Tagesnotizen
+- Feiertags-Cache
+
+Ein Speichervorgang ersetzt den konsistenten Benutzerstand innerhalb einer Datenbanktransaktion. Eine Revisionsnummer verhindert, dass eine ältere Browser-Sitzung neuere Serverdaten unbemerkt überschreibt.
+
+## Authentifizierung
+
+- Registrierung erfolgt direkt bei TimePilot mit E-Mail-Adresse und Passwort.
+- Passwörter werden mit Node.js `scrypt` und individuellem Salt gehasht.
+- Sitzungs-Token werden zufällig erzeugt; in PostgreSQL liegt nur der SHA-256-Hash des Tokens.
+- Sitzungen laufen standardmäßig nach 30 Tagen ab.
+- Registrierung und Login besitzen ein einfaches serverseitiges In-Memory-Versuchslimit.
+- Konten und Fachdaten sind über `user_id` voneinander getrennt.
+
+Die App versendet derzeit keine Bestätigungs- oder Passwort-zurücksetzen-E-Mails. Für einen öffentlich erreichbaren Produktivbetrieb sollten zusätzlich TLS, ein zentraler Rate-Limiter am Reverse Proxy, E-Mail-Verifikation und ein sicherer Wiederherstellungsprozess ergänzt werden.
+
+## Datenübernahme zwischen den Modi
+
+1. In **Einstellungen → Datensicherung** ein JSON-Backup exportieren.
+2. Speichermodus wechseln.
+3. Im anderen Modus das Backup importieren.
+4. Im Servermodus den Synchronisierungsstatus am unteren Fensterrand kontrollieren.
+
+## PDF-Export
+
+Der Monatsbericht wird im Browser mit jsPDF erzeugt. Deshalb funktioniert der PDF-Export in beiden Speicherarten identisch und benötigt keinen zusätzlichen PDF-Dienst auf dem Server.
 
 ## Projektstruktur
 
 ```text
-src/App.tsx            Oberfläche und Anwendungslogik
-src/lib/time.ts        Zeit-, Soll- und Saldoberechnung
-src/lib/holidays.ts    Feiertags-API und Offline-Fallback
-src/lib/pdf.ts         PDF-Monatsbericht
-src/lib/storage.ts     lokale Speicherung und Backup
-src/lib/date.ts        Datumsfunktionen
-src/styles.css         responsive Oberfläche
-public/sw.js           einfacher Service Worker
+src/
+  App.tsx                 Startmodus, Login und Synchronisierung
+  TimePilotApp.tsx        vollständige Fachoberfläche
+  lib/data-store.ts       Browser- und Serveradapter
+  lib/time.ts             Arbeitszeit- und Sollzeitberechnung
+  lib/pdf.ts              PDF-Monatsbericht
+server/
+  migrations/             PostgreSQL-Schema
+  src/index.mjs           HTTP-API und statische Auslieferung
+  src/auth.mjs            Passwort- und Sitzungslogik
+  src/data.mjs            Laden und transaktionales Speichern
+  src/validation.mjs      serverseitige Datenvalidierung
 ```
 
-## Wichtige Einschränkungen des MVP
+## Weiterführende Anleitungen
 
-- Einzelbenutzer und ein Browserprofil
-- Keine Benutzeranmeldung
-- Keine zentrale Datenbank oder Synchronisierung zwischen Geräten
-- Keine halben Urlaubstage
-- Keine automatische gesetzliche Pausenprüfung
-- Keine revisionssichere oder manipulationsgeschützte Historie
-- Keine Prüfung auf arbeitsrechtliche oder tarifvertragliche Vorgaben
-
-Für einen produktiven Firmenbetrieb sollte als nächster Schritt ein Backend mit PostgreSQL, Anmeldung, Rollen, Audit-Log, Backups und serverseitigem PDF-Export ergänzt werden.
+- [INSTALLATION.md](INSTALLATION.md) – Installation und erste Tests
+- [DATABASE_SETUP.md](DATABASE_SETUP.md) – PostgreSQL- und Servereinrichtung, Docker, Backups und Produktion

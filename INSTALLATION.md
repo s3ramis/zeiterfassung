@@ -1,235 +1,166 @@
-# Installation und lokaler Test
+# Installation und erster Test
 
-## 1. Was muss installiert sein?
+## 1. Benötigte Software
 
-Für den lokalen Test werden nur folgende Dinge benötigt:
+### Für den Browser-Modus
 
-1. **Node.js 24 LTS** inklusive npm
-2. Ein moderner Browser, beispielsweise Chrome, Edge, Firefox oder Safari
-3. Optional ein Editor wie Visual Studio Code
-4. Optional Git, falls das Projekt später über ein Repository verwaltet werden soll
+- Node.js ab Version 22.12, empfohlen Node.js 24 LTS
+- npm, wird zusammen mit Node.js installiert
+- Chrome, Edge, Firefox oder Safari in einer aktuellen Version
 
-Nicht erforderlich sind:
+### Zusätzlich für den Server-Modus
 
-- Docker
-- PostgreSQL oder eine andere Datenbank
-- Java
-- Python
-- ein separater Webserver
-- globale Installationen von React, TypeScript oder Vite
+Eine der folgenden Varianten:
 
-React, TypeScript, Vite und jsPDF werden mit `npm install` automatisch nur für dieses Projekt installiert.
+- Docker Desktop beziehungsweise Docker Engine mit Docker Compose, empfohlen
+- oder eine lokale PostgreSQL-Installation ab Version 15
 
-## 2. Node.js installieren
+Git ist hilfreich, aber für ein entpacktes ZIP nicht erforderlich.
 
-### Windows
+## 2. Projekt entpacken und Abhängigkeiten installieren
 
-1. Die LTS-Version von Node.js von der offiziellen Node.js-Seite herunterladen.
-2. Den Installer starten.
-3. Die Standardoptionen inklusive npm beibehalten.
-4. PowerShell oder Eingabeaufforderung neu öffnen.
-5. Installation prüfen:
-
-```powershell
-node --version
-npm --version
-```
-
-Die Node-Version muss mindestens `22.12.0` sein. Empfohlen ist eine aktuelle Version aus der 24-LTS-Reihe.
-
-Falls PowerShell meldet, dass `npm.ps1` nicht ausgeführt werden darf, kann alternativ Folgendes verwendet werden:
-
-```powershell
-npm.cmd install
-npm.cmd run dev
-```
-
-Oder einmalig für den eigenen Benutzer:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
-### macOS
-
-Variante A: offizieller Installer von der Node.js-Webseite.
-
-Variante B mit Homebrew:
-
-```bash
-brew install node@24
-```
-
-Danach prüfen:
-
-```bash
-node --version
-npm --version
-```
-
-### Linux
-
-Am zuverlässigsten ist ein Versionsmanager wie `nvm`:
-
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-```
-
-Terminal neu öffnen und anschließend:
-
-```bash
-nvm install 24
-nvm use 24
-node --version
-npm --version
-```
-
-Alternativ kann Node.js über die Paketverwaltung der Distribution installiert werden. Dabei darauf achten, dass die Version mindestens 22.12 ist.
-
-## 3. Projekt entpacken
-
-Die ZIP-Datei in einen beliebigen Ordner entpacken, zum Beispiel:
-
-### Windows
-
-```text
-C:\Projekte\timepilot-mvp
-```
-
-### macOS/Linux
-
-```text
-~/Projekte/timepilot-mvp
-```
-
-## 4. Terminal im Projektordner öffnen
-
-### Windows PowerShell
-
-```powershell
-cd C:\Projekte\timepilot-mvp
-```
-
-### macOS/Linux
-
-```bash
-cd ~/Projekte/timepilot-mvp
-```
-
-## 5. Abhängigkeiten installieren
+Terminal beziehungsweise PowerShell im Projektordner öffnen:
 
 ```bash
 npm install
 ```
 
-Dadurch werden lokal im Unterordner `node_modules` installiert:
+Dabei werden React, TypeScript, Vite, jsPDF und der PostgreSQL-Treiber `pg` lokal im Projekt installiert. Es ist keine globale Framework-Installation nötig.
 
-- React 19
-- React DOM
-- TypeScript
-- Vite 8
-- jsPDF
-
-Es ist keine globale Framework-Installation erforderlich.
-
-## 6. Entwicklungsserver starten
+## 3. Browser-Modus testen
 
 ```bash
 npm run dev
 ```
 
-Vite zeigt anschließend eine lokale Adresse an. Standardmäßig:
+Browser öffnen:
 
 ```text
 http://localhost:5173
 ```
 
-Diese Adresse im Browser öffnen.
+Auf der Startseite **Browser-Daten** auswählen.
 
-Der Server läuft, solange das Terminal geöffnet bleibt. Beenden mit:
+Die Daten liegen dann im `localStorage` dieses Browserprofils. Ein anderer Browser, ein privates Fenster oder ein anderes Gerät sieht diese Daten nicht.
+
+### Komfortskripte
+
+Windows:
 
 ```text
-Strg + C
+start-windows.cmd
 ```
 
-## 7. Erste Funktionsprüfung
+macOS/Linux:
 
-1. In den **Einstellungen** Name, Bundesland und Jahresurlaub festlegen.
-2. Unter **Arbeitspläne** den vorhandenen 40-Stunden-Plan prüfen oder einen neuen Plan anlegen.
-3. Auf der Übersicht **Einstempeln** drücken.
-4. Nach kurzer Zeit **Pause Anfang** und **Pause Ende** testen.
-5. **Ausstempeln** drücken.
-6. Einen Kalendertag auswählen und eine Bemerkung speichern.
-7. Für einen vergangenen Tag Start, Ende und Pause manuell eintragen.
-8. Urlaub oder Krankheit von/bis Datum eintragen.
-9. Den sichtbaren Monat als PDF exportieren.
-10. Unter Einstellungen ein JSON-Backup exportieren.
+```bash
+chmod +x start.sh
+./start.sh
+```
 
-## 8. Produktionsversion bauen und PWA testen
+## 4. Grundfunktionen prüfen
+
+1. Einstempeln.
+2. Pause starten und beenden.
+3. Ausstempeln.
+4. Im Kalender einen Tag auswählen und eine Bemerkung speichern.
+5. Unter **Arbeitspläne** einen Plan mit Gültigkeitszeitraum anlegen.
+6. Unter **Abwesenheiten** Urlaub oder Krankheit eintragen.
+7. In der Übersicht einen Monat auswählen und **PDF exportieren** anklicken.
+8. Unter **Einstellungen → Datensicherung** ein JSON-Backup exportieren.
+
+## 5. Server-Modus testen
+
+Die vollständige Einrichtung ist in [DATABASE_SETUP.md](DATABASE_SETUP.md) beschrieben.
+
+Mit Docker als Datenbank:
+
+```bash
+cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
+
+docker compose up -d
+npm run dev:full
+```
+
+Browser öffnen:
+
+```text
+http://localhost:5173
+```
+
+Dann:
+
+1. **Datenbank-Server** auswählen.
+2. API-Adresse `http://localhost:3001/api` verwenden.
+3. **Konto anlegen** öffnen.
+4. Anzeigename, E-Mail-Adresse und ein Passwort mit mindestens zehn Zeichen eingeben.
+5. Nach der Registrierung wird das Konto direkt angemeldet.
+
+Der Synchronisierungsstatus wird unten in der App angezeigt.
+
+## 6. Produktionsbuild lokal testen
+
+PostgreSQL und `.env` müssen eingerichtet sein.
 
 ```bash
 npm run build
-npm run preview
+npm start
 ```
 
-Anschließend öffnen:
+Anschließend:
 
 ```text
-http://localhost:4173
+http://localhost:3001
 ```
 
-In Chrome oder Edge kann dann je nach Browser eine Installationsschaltfläche in der Adressleiste erscheinen. Alternativ im Browsermenü **App installieren** oder **Zum Startbildschirm hinzufügen** wählen.
+Der Node-Server liefert dann sowohl die API als auch das gebaute Frontend aus.
 
-## 9. TypeScript-Prüfung
-
-```bash
-npm run check
-```
-
-## 10. Häufige Probleme
+## 7. Häufige Probleme
 
 ### `node` oder `npm` wurde nicht gefunden
 
-Terminal nach der Node.js-Installation vollständig schließen und neu öffnen. Danach erneut `node --version` ausführen.
-
-### Node-Version ist zu alt
-
-Eine aktuelle Node.js-LTS-Version installieren. Vite 8 benötigt eine moderne Node-Version.
+Node.js installieren und das Terminal danach vollständig neu öffnen.
 
 ### Port 5173 ist belegt
 
+Den anderen Vite-Prozess beenden. Das Projekt verwendet bewusst einen festen Port, damit die CORS-Konfiguration eindeutig bleibt.
+
+### Port 3001 ist belegt
+
+In `.env` einen anderen Wert setzen, zum Beispiel:
+
+```env
+PORT=3010
+```
+
+Dann in der Startauswahl `http://localhost:3010/api` eintragen und den neuen Ursprung gegebenenfalls zu `CORS_ORIGINS` hinzufügen.
+
+### Anmeldung meldet einen Verbindungsfehler
+
+Prüfen:
+
 ```bash
-npm run dev -- --port 5174
+curl http://localhost:3001/api/health
 ```
 
-Dann öffnen:
+Erwartete Antwort:
 
-```text
-http://localhost:5174
+```json
+{"ok":true,"service":"timepilot-server"}
 ```
 
-### Feiertage sind unvollständig
+### PostgreSQL ist noch nicht bereit
 
-Die OpenHolidays API war möglicherweise nicht erreichbar. In den Einstellungen wird angezeigt, ob die API oder der bundesweite Offline-Fallback verwendet wird. Bei Fallback fehlen regionale Feiertage.
+```bash
+docker compose ps
+docker compose logs postgres
+```
 
-### Daten sind verschwunden
+### PDF wird nicht heruntergeladen
 
-Die App speichert im Browserprofil. Prüfen, ob derselbe Browser und dasselbe Profil verwendet werden. Browserdaten oder Inkognito-Modus können die lokale Speicherung löschen. Ein vorhandenes JSON-Backup kann unter Einstellungen importiert werden.
+Browser-Downloadberechtigung prüfen. Der Export läuft lokal im Browser und wird nicht vom Server erzeugt.
 
-### Die Seite zeigt nach einem Update eine alte Version
+### Browserdaten wurden versehentlich gelöscht
 
-Bei einem Produktionsbuild kann der Service Worker alte Dateien zwischenspeichern. Im Browser die Website-Daten für `localhost` löschen oder den Service Worker in den Entwicklertools entfernen und die Seite neu laden.
-
-## 11. Für einen produktiven Betrieb
-
-Für einen echten Firmenbetrieb sollte das MVP nicht unverändert verwendet werden. Empfohlene Ergänzungen:
-
-- Backend mit Node.js und PostgreSQL
-- Benutzeranmeldung über Microsoft Entra ID, Google Workspace oder Keycloak
-- serverseitige Zugriffsrechte
-- unveränderliches Audit-Log
-- zentrale Backups
-- Verschlüsselung und Datenschutzkonzept
-- serverseitiger PDF-Export
-- Tests und CI/CD
-- Prüfung der arbeitsrechtlichen Anforderungen
+Ein zuvor exportiertes JSON-Backup unter **Einstellungen → Datensicherung** importieren.
