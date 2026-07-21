@@ -71,7 +71,6 @@ Diese Variante baut das Frontend und startet App-Server und PostgreSQL gemeinsam
 
 ```bash
 cp .env.example .env
-# In .env unbedingt POSTGRES_PASSWORD ändern.
 docker compose -f docker-compose.full.yml up --build
 ```
 
