@@ -74,7 +74,6 @@ Beim ersten Start wird direkt in TimePilot ein Konto mit Anzeigename, E-Mail-Adr
 
 ```bash
 cp .env.example .env
-# POSTGRES_PASSWORD in .env unbedingt ändern.
 docker compose -f docker-compose.full.yml up --build
 ```
 
