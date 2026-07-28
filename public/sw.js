@@ -1,4 +1,4 @@
-const CACHE = 'timepilot-shell-v2';
+const CACHE = 'timepilot-shell-v3';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {

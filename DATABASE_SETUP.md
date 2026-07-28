@@ -1,9 +1,9 @@
 # PostgreSQL- und TimePilot-Server einrichten
 
-Diese Anleitung beschreibt drei Varianten:
+Diese Anleitung beschreibt drei Betriebsvarianten:
 
-1. komplette App mit Docker, am einfachsten
-2. nur PostgreSQL mit Docker und App lokal über Node.js
+1. komplette App mit Docker
+2. PostgreSQL in Docker und App lokal über Node.js
 3. vorhandener oder nativ installierter PostgreSQL-Server
 
 ## Variante A: komplette App mit Docker
@@ -15,25 +15,23 @@ Diese Anleitung beschreibt drei Varianten:
 
 ### Einrichtung
 
-Projektordner öffnen und Konfiguration anlegen:
-
 ```bash
 cp .env.example .env
 ```
 
-Unter Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-In `.env` mindestens diesen Wert ändern:
+In `.env` mindestens ändern:
 
 ```env
 POSTGRES_PASSWORD=ein_langes_zufaelliges_passwort
 ```
 
-Danach starten:
+Starten:
 
 ```bash
 docker compose -f docker-compose.full.yml up --build
@@ -45,20 +43,20 @@ Im Browser öffnen:
 http://localhost:3001
 ```
 
-Auf der TimePilot-Startseite **Datenbank-Server** wählen. Die vorausgefüllte API-Adresse sollte lauten:
+**Datenbank-Server** auswählen. Die API-Adresse lautet:
 
 ```text
 http://localhost:3001/api
 ```
 
-Danach ein Konto über Anzeigename, E-Mail-Adresse und Passwort anlegen.
+Danach ein Konto mit Anzeigename, E-Mail-Adresse und Passwort anlegen.
 
-### Im Hintergrund
+### Dienste
 
-- `postgres` startet PostgreSQL 17.
-- `app` baut React und startet den Node-Server.
-- Der Node-Server führt SQL-Migrationen automatisch aus.
-- PostgreSQL-Daten bleiben im Docker-Volume `timepilot_postgres_data` erhalten.
+- `postgres`: PostgreSQL 17
+- `app`: React-Build, Node.js-API und statische Auslieferung
+- automatische SQL-Migrationen beim Serverstart
+- persistentes Docker-Volume `timepilot_postgres_data`
 
 ### Stoppen
 
@@ -66,19 +64,15 @@ Danach ein Konto über Anzeigename, E-Mail-Adresse und Passwort anlegen.
 docker compose -f docker-compose.full.yml down
 ```
 
-Die Daten bleiben erhalten.
+Daten bleiben erhalten.
 
-Alles einschließlich Datenbankvolume löschen:
+Alles inklusive Datenbankvolume löschen:
 
 ```bash
 docker compose -f docker-compose.full.yml down -v
 ```
 
-Dieser Befehl löscht alle Konten und Arbeitszeiten unwiderruflich.
-
 ## Variante B: PostgreSQL in Docker, App lokal
-
-Diese Variante ist für Entwicklung und Quellcodeänderungen praktisch.
 
 ### 1. Datenbank starten
 
@@ -86,23 +80,22 @@ Diese Variante ist für Entwicklung und Quellcodeänderungen praktisch.
 docker compose up -d
 ```
 
-Die Datei `docker-compose.yml` startet nur PostgreSQL auf Port 5432 mit:
+Lokale Testwerte:
 
 ```text
 Datenbank: timepilot
 Benutzer:  timepilot
 Passwort:  timepilot_dev_password
+Port:      5432
 ```
 
-Diese Werte sind nur für den lokalen Test gedacht.
-
-### 2. App-Konfiguration erstellen
+### 2. Konfiguration anlegen
 
 ```bash
 cp .env.example .env
 ```
 
-Die enthaltene `DATABASE_URL` passt bereits zu `docker-compose.yml`:
+Die vorhandene Verbindung passt zu `docker-compose.yml`:
 
 ```env
 DATABASE_URL=postgresql://timepilot:timepilot_dev_password@localhost:5432/timepilot
@@ -115,15 +108,10 @@ npm install
 npm run dev:full
 ```
 
-Alternativ getrennt in zwei Terminals:
+Alternativ getrennt:
 
 ```bash
 npm run dev:server
-```
-
-und:
-
-```bash
 npm run dev:web
 ```
 
@@ -139,19 +127,17 @@ API:
 http://localhost:3001/api
 ```
 
-### 4. Migrationen manuell prüfen
-
-Der Server migriert automatisch. Ein manueller Lauf ist trotzdem möglich:
+### 4. Migrationen manuell ausführen
 
 ```bash
 npm run db:migrate
 ```
 
+Der Server führt ausstehende Migrationen beim Start ebenfalls automatisch aus.
+
 ## Variante C: vorhandener PostgreSQL-Server
 
 ### 1. Benutzer und Datenbank anlegen
-
-Als PostgreSQL-Administrator:
 
 ```sql
 CREATE USER timepilot WITH PASSWORD 'ein_langes_zufaelliges_passwort';
@@ -160,20 +146,18 @@ CREATE DATABASE timepilot OWNER timepilot;
 
 ### 2. Verbindungsadresse setzen
 
-In `.env`:
-
 ```env
 DATABASE_URL=postgresql://timepilot:ein_langes_zufaelliges_passwort@db.example.internal:5432/timepilot
 ```
 
-Bei einem Dienst, der TLS verlangt:
+Bei erforderlichem TLS:
 
 ```env
 DB_SSL=true
 DB_SSL_REJECT_UNAUTHORIZED=true
 ```
 
-### 3. Schema einrichten und Server starten
+### 3. Schema und App starten
 
 ```bash
 npm install
@@ -187,45 +171,60 @@ npm start
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `DATABASE_URL` | vollständige PostgreSQL-Verbindungsadresse | erforderlich, sofern keine `PG*`-Variablen verwendet werden |
-| `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` | alternative getrennte PostgreSQL-Verbindungswerte | optional |
+| `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` | alternative Einzelwerte | optional |
 | `PORT` | HTTP-Port des TimePilot-Servers | `3001` |
 | `HOST` | Bind-Adresse | `0.0.0.0` |
 | `CORS_ORIGINS` | erlaubte Browser-Ursprünge, kommasepariert | `http://localhost:5173` |
-| `SESSION_DAYS` | Gültigkeit einer Anmeldung | `30` |
+| `SESSION_DAYS` | Gültigkeit einer Sitzung | `30` |
 | `DB_POOL_SIZE` | maximale PostgreSQL-Verbindungen | `10` |
-| `DB_SSL` | TLS für PostgreSQL aktivieren | `false` |
+| `DB_SSL` | TLS für PostgreSQL | `false` |
 | `DB_SSL_REJECT_UNAUTHORIZED` | Datenbankzertifikat prüfen | `true` |
 
 ## Datenbankschema
 
-Migrationen liegen unter `server/migrations/` und werden in `schema_migrations` protokolliert.
+Migrationen liegen in `server/migrations/` und werden in `schema_migrations` protokolliert.
 
 Wichtige Tabellen:
 
 - `users`: Konto, Einstellungen und Revisionsnummer
 - `sessions`: gehashte Sitzungstoken mit Ablaufdatum
-- `time_events`: einzelne Stempelereignisse
-- `absences`: Urlaub, Krankheit und Überstundenausgleich
-- `work_plans`: Gültigkeitszeiträume der Arbeitspläne
+- `time_events`: einzelne Stempel-, Pausen- und Ausstempelereignisse
+- `absences`: Urlaub, Krankheit und Überstundenabbau
+- `work_plans`: Gültigkeitszeiträume
 - `work_plan_days`: Sollminuten pro Wochentag
 - `daily_notes`: Bemerkungen pro Datum
-- `holiday_cache`: geladene Feiertage pro Benutzer und Bundesland/Jahr
+- `holiday_cache`: Feiertage pro Benutzer, Bundesland und Jahr
 
-Arbeitszeiten werden in PostgreSQL als Zeitstempel gespeichert. Tagessollzeiten werden als ganze Minuten gespeichert, um Rundungsfehler zu vermeiden.
+Arbeitspläne sind optional. Ein Benutzer darf alle Arbeitspläne löschen. Zeiträume ohne gültigen Plan erhalten in der Fachlogik ein Tagessoll von `0:00` Stunden.
+
+Manuelle Pausenzeiten benötigen keine zusätzliche Tabelle: Jede Pause wird als `BREAK_START` und `BREAK_END` in `time_events` gespeichert. Dadurch stehen die exakten Uhrzeiten auch im Datenbankmodus und im PDF-Export zur Verfügung.
+
+## Serverseitige Geschäftsregeln
+
+Der Server validiert unter anderem:
+
+- erlaubte Zeit- und Abwesenheitstypen
+- gültige Datums- und Zeitwerte
+- nicht überlappende Arbeitspläne
+- leere Arbeitsplanliste ist erlaubt
+- Urlaub darf nicht mit vorhandenen Arbeitszeiten überlappen
+- getrennte Benutzerdaten und gültige Revisionsnummern
+
+Die Überstundenberechnung und der PDF-Export verwenden dieselbe gemeinsame Fachlogik wie der Browsermodus.
 
 ## Backup und Wiederherstellung
 
 ### Fachliches JSON-Backup
 
-Für einzelne Benutzer ist der Export in der App am einfachsten:
+Für einzelne Konten:
 
 ```text
 Einstellungen → Datensicherung → JSON-Backup exportieren
 ```
 
-Dieses Backup kann auch in den Browser-Modus importiert werden.
+Das Backup kann auch in den Browsermodus importiert werden.
 
-### Vollständiges PostgreSQL-Backup bei Docker-Komplettbetrieb
+### PostgreSQL-Backup im Docker-Komplettbetrieb
 
 ```bash
 docker compose -f docker-compose.full.yml exec -T postgres \
@@ -239,38 +238,34 @@ docker compose -f docker-compose.full.yml exec -T postgres \
   psql -U timepilot -d timepilot < timepilot-backup.sql
 ```
 
-Unter PowerShell funktionieren Ein- und Ausgabeumleitungen ebenfalls; die Zeilenfortsetzung `\` muss dort entfernt oder durch den PowerShell-Backtick ersetzt werden.
+Unter PowerShell die Zeilenfortsetzung `\` entfernen oder durch einen PowerShell-Backtick ersetzen.
 
 ### Regelmäßige Backups
 
-Für einen echten Betrieb mindestens täglich sichern und Wiederherstellung regelmäßig testen. Ein Backup ist erst dann belastbar, wenn ein Restore erfolgreich geprüft wurde.
+Für den produktiven Betrieb mindestens täglich sichern und Wiederherstellungen regelmäßig testen.
 
 ## Datenbank zurücksetzen
-
-Lokale Node-Variante:
 
 ```bash
 npm run db:reset
 ```
 
-Zur Bestätigung muss exakt `RESET` eingegeben werden. Danach werden das Schema neu erstellt und alle Konten gelöscht.
+Zur Bestätigung muss exakt `RESET` eingegeben werden. Danach werden alle Konten und Fachdaten gelöscht und das Schema neu angelegt.
 
 ## Betrieb hinter HTTPS
 
-Für Zugriff außerhalb des eigenen Rechners sollte TimePilot hinter einem Reverse Proxy wie Caddy, nginx oder Traefik betrieben werden.
+Für Zugriff außerhalb des lokalen Rechners sollte TimePilot hinter Caddy, nginx oder Traefik betrieben werden.
 
-Erforderlich:
+Mindestens erforderlich:
 
 - HTTPS erzwingen
-- PostgreSQL nicht öffentlich ins Internet freigeben
+- PostgreSQL nicht öffentlich freigeben
 - starkes Datenbankpasswort
-- `CORS_ORIGINS` auf die echte Webadresse beschränken
-- regelmäßige Datenbankbackups
+- `CORS_ORIGINS` auf die echte Webadresse begrenzen
+- regelmäßige Backups
 - Server- und Containerupdates
-- zentraler Rate-Limiter am Reverse Proxy; ein einfaches In-Memory-Limit ist bereits enthalten
-- optional E-Mail-Verifikation und Passwort-zurücksetzen-Funktion
-
-Die enthaltene Authentifizierung ist für lokalen, internen und MVP-Betrieb funktionsfähig. Für einen frei erreichbaren öffentlichen Dienst sind die genannten Härtungsmaßnahmen erforderlich.
+- zentraler Rate-Limiter am Reverse Proxy
+- für öffentlichen Betrieb zusätzlich E-Mail-Verifikation und Passwort-Wiederherstellung
 
 ## Serverzustand prüfen
 
@@ -284,7 +279,7 @@ Antwort:
 {"ok":true,"service":"timepilot-server"}
 ```
 
-Docker-Logs:
+Logs:
 
 ```bash
 docker compose -f docker-compose.full.yml logs -f app postgres

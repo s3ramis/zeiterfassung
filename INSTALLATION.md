@@ -2,38 +2,38 @@
 
 ## 1. Benötigte Software
 
-### Für den Browser-Modus
+### Browsermodus
 
 - Node.js ab Version 22.12, empfohlen Node.js 24 LTS
 - npm, wird zusammen mit Node.js installiert
-- Chrome, Edge, Firefox oder Safari in einer aktuellen Version
+- aktueller Chrome, Edge, Firefox oder Safari
 
-### Zusätzlich für den Server-Modus
+### Datenbankmodus
 
-Eine der folgenden Varianten:
+Zusätzlich entweder:
 
 - Docker Desktop beziehungsweise Docker Engine mit Docker Compose, empfohlen
-- oder eine lokale PostgreSQL-Installation ab Version 15
+- oder PostgreSQL ab Version 15
 
-Git ist hilfreich, aber für ein entpacktes ZIP nicht erforderlich.
+Git ist für ein entpacktes ZIP nicht erforderlich.
 
-## 2. Projekt entpacken und Abhängigkeiten installieren
+## 2. Projekt vorbereiten
 
-Terminal beziehungsweise PowerShell im Projektordner öffnen:
+ZIP-Datei entpacken und ein Terminal beziehungsweise PowerShell im Projektordner öffnen:
 
 ```bash
 npm install
 ```
 
-Dabei werden React, TypeScript, Vite, jsPDF und der PostgreSQL-Treiber `pg` lokal im Projekt installiert. Es ist keine globale Framework-Installation nötig.
+React, TypeScript, Vite, jsPDF und der PostgreSQL-Treiber `pg` werden projektlokal installiert. Es ist keine globale Framework-Installation nötig.
 
-## 3. Browser-Modus testen
+## 3. Browsermodus starten
 
 ```bash
 npm run dev
 ```
 
-Browser öffnen:
+Im Browser öffnen:
 
 ```text
 http://localhost:5173
@@ -41,7 +41,7 @@ http://localhost:5173
 
 Auf der Startseite **Browser-Daten** auswählen.
 
-Die Daten liegen dann im `localStorage` dieses Browserprofils. Ein anderer Browser, ein privates Fenster oder ein anderes Gerät sieht diese Daten nicht.
+Die Daten werden ausschließlich im `localStorage` des aktuellen Browserprofils gespeichert.
 
 ### Komfortskripte
 
@@ -58,22 +58,68 @@ chmod +x start.sh
 ./start.sh
 ```
 
-## 4. Grundfunktionen prüfen
+## 4. Empfohlener Funktionstest
+
+### Arbeitsplanregeln
+
+1. Unter **Arbeitspläne** einen Plan bearbeiten.
+2. Den Plan löschen.
+3. Zur Übersicht wechseln: Das Tagessoll muss `0:00` anzeigen und **Einstempeln** muss gesperrt sein.
+4. Einen neuen Plan für den heutigen Tag anlegen.
+5. Prüfen, dass **Einstempeln** wieder möglich ist.
+
+### Live-Zeiterfassung
 
 1. Einstempeln.
-2. Pause starten und beenden.
-3. Ausstempeln.
-4. Im Kalender einen Tag auswählen und eine Bemerkung speichern.
-5. Unter **Arbeitspläne** einen Plan mit Gültigkeitszeitraum anlegen.
-6. Unter **Abwesenheiten** Urlaub oder Krankheit eintragen.
-7. In der Übersicht einen Monat auswählen und **PDF exportieren** anklicken.
-8. Unter **Einstellungen → Datensicherung** ein JSON-Backup exportieren.
+2. Pause beginnen.
+3. Pause beenden.
+4. Ausstempeln.
+5. Prüfen, dass Nettozeit und Pausenzeit korrekt angezeigt werden.
 
-## 5. Server-Modus testen
+### Manuelle Zeiten und Pausen
 
-Die vollständige Einrichtung ist in [DATABASE_SETUP.md](DATABASE_SETUP.md) beschrieben.
+1. Einen Kalendertag anklicken.
+2. Arbeitsbeginn und Arbeitsende setzen.
+3. Über **Pause hinzufügen** mindestens zwei Pausenintervalle erfassen.
+4. Zeiten speichern.
+5. Prüfen, dass alle Stempelereignisse mit Uhrzeit in den Tagesdetails erscheinen.
 
-Mit Docker als Datenbank:
+### Kalenderauswahl für Abwesenheiten
+
+1. Einen Tag im Kalender anklicken: **Von** wird gesetzt.
+2. Einen zweiten Tag anklicken: **Bis** wird gesetzt.
+3. Urlaub eintragen.
+4. Den Urlaub wieder löschen.
+
+### Konfliktschutz
+
+1. Für einen Tag manuelle Arbeitszeit erfassen.
+2. Versuchen, für denselben Tag Urlaub einzutragen – der Eintrag muss abgelehnt werden.
+3. Arbeitszeit entfernen und Urlaub eintragen.
+4. Versuchen, für diesen Urlaubstag Arbeitszeit zu erfassen – die Eingabe muss gesperrt sein.
+
+### Urlaub und Überstundenabbau
+
+1. Urlaubsstand in Übersicht und Abwesenheitsseite prüfen.
+2. Einen zukünftigen Überstundenabbau eintragen.
+3. Prüfen, dass das Zeitkonto sofort um das Tagessoll reduziert wird.
+
+### PDF-Export
+
+1. Einen Monat mit Arbeitszeiten auswählen.
+2. **PDF exportieren** anklicken.
+3. Auf der Detailseite der PDF prüfen, dass Arbeitsbeginn, Arbeitsende und einzelne Pausenzeiten enthalten sind.
+
+### Datensicherung
+
+1. Unter **Einstellungen → Datensicherung** ein JSON-Backup exportieren.
+2. Backup wieder importieren.
+
+## 5. Datenbankmodus testen
+
+Die vollständige Einrichtung steht in [DATABASE_SETUP.md](DATABASE_SETUP.md).
+
+Mit PostgreSQL in Docker:
 
 ```bash
 cp .env.example .env
@@ -89,15 +135,15 @@ Browser öffnen:
 http://localhost:5173
 ```
 
-Dann:
+Danach:
 
 1. **Datenbank-Server** auswählen.
 2. API-Adresse `http://localhost:3001/api` verwenden.
-3. **Konto anlegen** öffnen.
+3. **Konto anlegen** auswählen.
 4. Anzeigename, E-Mail-Adresse und ein Passwort mit mindestens zehn Zeichen eingeben.
-5. Nach der Registrierung wird das Konto direkt angemeldet.
+5. Nach der Registrierung denselben Funktionstest wie im Browsermodus durchführen.
 
-Der Synchronisierungsstatus wird unten in der App angezeigt.
+Der Synchronisierungsstatus wird in der Kopfzeile und am unteren Fensterrand angezeigt.
 
 ## 6. Produktionsbuild lokal testen
 
@@ -114,31 +160,37 @@ Anschließend:
 http://localhost:3001
 ```
 
-Der Node-Server liefert dann sowohl die API als auch das gebaute Frontend aus.
+Der Node-Server liefert dann API und gebautes Frontend aus.
 
-## 7. Häufige Probleme
+## 7. Automatische Prüfungen
+
+```bash
+npm run check
+```
+
+Der Befehl führt die TypeScript-Prüfung und die Server-Unit-Tests aus. Geprüft werden unter anderem Authentifizierung, Datenvalidierung, löschbare Arbeitspläne und Urlaubskonflikte.
+
+## 8. Häufige Probleme
 
 ### `node` oder `npm` wurde nicht gefunden
 
-Node.js installieren und das Terminal danach vollständig neu öffnen.
+Node.js installieren und das Terminal vollständig neu öffnen.
 
 ### Port 5173 ist belegt
 
-Den anderen Vite-Prozess beenden. Das Projekt verwendet bewusst einen festen Port, damit die CORS-Konfiguration eindeutig bleibt.
+Den anderen Vite-Prozess beenden. Das Projekt verwendet einen festen Port, damit die lokale CORS-Konfiguration eindeutig bleibt.
 
 ### Port 3001 ist belegt
 
-In `.env` einen anderen Wert setzen, zum Beispiel:
+In `.env` beispielsweise setzen:
 
 ```env
 PORT=3010
 ```
 
-Dann in der Startauswahl `http://localhost:3010/api` eintragen und den neuen Ursprung gegebenenfalls zu `CORS_ORIGINS` hinzufügen.
+Dann `http://localhost:3010/api` als Serveradresse eintragen und den Ursprung gegebenenfalls zu `CORS_ORIGINS` hinzufügen.
 
-### Anmeldung meldet einen Verbindungsfehler
-
-Prüfen:
+### Server ist nicht erreichbar
 
 ```bash
 curl http://localhost:3001/api/health
@@ -157,10 +209,10 @@ docker compose ps
 docker compose logs postgres
 ```
 
-### PDF wird nicht heruntergeladen
+### PDF wird nicht gespeichert
 
-Browser-Downloadberechtigung prüfen. Der Export läuft lokal im Browser und wird nicht vom Server erzeugt.
+Downloadberechtigung des Browsers prüfen. Der PDF-Export erfolgt lokal im Browser.
 
-### Browserdaten wurden versehentlich gelöscht
+### Browserdaten wurden gelöscht
 
 Ein zuvor exportiertes JSON-Backup unter **Einstellungen → Datensicherung** importieren.

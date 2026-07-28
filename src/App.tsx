@@ -21,6 +21,30 @@ const MODE_KEY = 'timepilot.storage-mode.v1';
 const SERVER_URL_KEY = 'timepilot.server-url.v1';
 const SERVER_TOKEN_KEY = 'timepilot.server-token.v1';
 
+
+function LogoMark() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+function StorageMark({ type }: { type: 'browser' | 'server' }) {
+  return type === 'browser' ? (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18M7 6.5h.01M10 6.5h.01" />
+    </svg>
+  ) : (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" />
+    </svg>
+  );
+}
+
 function selectedMode(): StorageMode | null {
   const value = sessionStorage.getItem(MODE_KEY) ?? localStorage.getItem(MODE_KEY);
   return value === 'browser' || value === 'server' ? value : null;
@@ -276,17 +300,17 @@ function ModeChooser({ serverUrl, setServerUrl, onChoose }: ModeChooserProps) {
   return (
     <div className="gateway-page">
       <div className="gateway-card wide">
-        <div className="gateway-brand"><div className="brandmark">◷</div><div><strong>TimePilot</strong><span>Speichermodus auswählen</span></div></div>
+        <div className="gateway-brand"><div className="brandmark"><LogoMark /></div><div><strong>TimePilot</strong><span>Speichermodus auswählen</span></div></div>
         <h1>Wie soll die App gestartet werden?</h1>
         <p className="gateway-lead">Beide Modi enthalten dieselben Funktionen. Die Auswahl kann später in den Einstellungen geändert werden.</p>
         <div className="mode-grid">
           <button className="mode-card" onClick={() => onChoose('browser', undefined, remember)}>
-            <span className="mode-icon">▣</span><strong>Browser-Daten</strong>
+            <span className="mode-icon"><StorageMark type="browser" /></span><strong>Browser-Daten</strong>
             <span>Ohne Server testen. Alle Daten verbleiben in diesem Browserprofil.</span>
             <em>Ideal für Einzelplatz und schnelle Tests</em>
           </button>
           <div className="mode-card static">
-            <span className="mode-icon">⌘</span><strong>Datenbank-Server</strong>
+            <span className="mode-icon"><StorageMark type="server" /></span><strong>Datenbank-Server</strong>
             <span>Konto mit E-Mail und Passwort. Daten werden in PostgreSQL gespeichert.</span>
             <label>API-Adresse<input value={serverUrl} onChange={(event) => setServerUrl(event.target.value)} placeholder="http://localhost:3001/api" /></label>
             <button className="small-btn primary" onClick={() => onChoose('server', serverUrl, remember)}>Server-Modus öffnen</button>
@@ -332,7 +356,7 @@ function AuthScreen({ serverUrl: initialServerUrl, onBack, onAuthenticated }: Au
   return (
     <div className="gateway-page">
       <form className="gateway-card auth-card" onSubmit={(event) => void submit(event)}>
-        <div className="gateway-brand"><div className="brandmark">◷</div><div><strong>TimePilot Server</strong><span>Eigenes Benutzerkonto</span></div></div>
+        <div className="gateway-brand"><div className="brandmark"><LogoMark /></div><div><strong>TimePilot Server</strong><span>Eigenes Benutzerkonto</span></div></div>
         <div className="auth-tabs"><button type="button" className={view === 'login' ? 'active' : ''} onClick={() => setView('login')}>Anmelden</button><button type="button" className={view === 'register' ? 'active' : ''} onClick={() => setView('register')}>Konto anlegen</button></div>
         <div className="field"><label>Server-API</label><input value={serverUrl} onChange={(event) => setServerUrl(event.target.value)} /></div>
         {view === 'register' && <div className="field"><label>Anzeigename</label><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required minLength={2} autoComplete="name" /></div>}
@@ -347,5 +371,5 @@ function AuthScreen({ serverUrl: initialServerUrl, onBack, onAuthenticated }: Au
 }
 
 function FullPageMessage({ title, text, actions }: { title: string; text: string; actions?: React.ReactNode }) {
-  return <div className="gateway-page"><div className="gateway-card message-card"><div className="gateway-brand"><div className="brandmark">◷</div><strong>TimePilot</strong></div><h1>{title}</h1><p className="gateway-lead">{text}</p>{actions && <div className="split-actions">{actions}</div>}</div></div>;
+  return <div className="gateway-page"><div className="gateway-card message-card"><div className="gateway-brand"><div className="brandmark"><LogoMark /></div><strong>TimePilot</strong></div><h1>{title}</h1><p className="gateway-lead">{text}</p>{actions && <div className="split-actions">{actions}</div>}</div></div>;
 }

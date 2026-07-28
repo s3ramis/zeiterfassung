@@ -1,26 +1,31 @@
-# Zeiterfassung mit Browser- und Datenbankmodus
+# TimePilot – Zeiterfassung mit Browser- und Datenbankmodus
 
-Beim Start kann zwischen zwei technisch getrennten Speicherarten gewählt werden. Optional kann die Auswahl auf dem Gerät gespeichert werden:
+TimePilot ist eine deutschsprachige Zeiterfassungs-App mit identischem Funktionsumfang in zwei Betriebsarten:
 
-- **Browser-Daten:** funktioniert ohne Server und speichert ausschließlich im aktuellen Browserprofil.
-- **Datenbank-Server:** Anmeldung mit eigener E-Mail-Adresse und Passwort; alle Daten werden benutzergetrennt in PostgreSQL gespeichert.
+- **Browser-Daten:** lokale Einzelplatznutzung ohne Server; Speicherung im Browserprofil.
+- **Datenbank-Server:** eigene Registrierung mit E-Mail und Passwort; benutzergetrennte Speicherung in PostgreSQL.
 
-Beide Modi verwenden dieselbe Oberfläche, dieselbe Berechnungslogik und denselben Funktionsumfang.
+Der Betriebsmodus wird beim App-Start ausgewählt und kann später in den Einstellungen gewechselt werden.
 
-## Enthaltene Funktionen
+## Funktionsumfang
 
 - Einstempeln, Pausenbeginn, Pausenende und Ausstempeln
 - Live-Anzeige der Nettoarbeitszeit
-- manuelle Zeiteinträge und Korrekturen
-- Tagesnotizen
-- Monatskalender mit Arbeitstagen, Wochenenden und Feiertagen
+- manuelle Arbeitszeiteinträge mit beliebig vielen Pausenintervallen inklusive Uhrzeiten
+- Monatskalender mit Arbeitstagen, Wochenenden, Feiertagen und Abwesenheiten
 - Feiertage nach deutschem Bundesland über OpenHolidays API mit Offline-Fallback
-- datierte Arbeitspläne mit täglicher Sollstundenverteilung
-- Über- und Minusstundenberechnung
-- Urlaub, Krankheit und Überstundenausgleich
-- Jahresurlaubskontingent und Resturlaub
-- bestätigungspflichtige Vorschläge für Überstundenausgleich
-- PDF-Export des ausgewählten Monats
+- datierte Arbeitspläne mit Sollstunden pro Wochentag
+- Arbeitspläne anlegen, bearbeiten und jederzeit löschen
+- Zeiträume ohne Arbeitsplan werden automatisch mit einem Tagessoll von `0:00` Stunden bewertet
+- Start der Live-Zeiterfassung nur bei vorhandenem, gültigem Arbeitsplan
+- Urlaub, Krankheit und Überstundenabbau
+- Urlaub kann nicht über Tage mit vorhandenen Arbeitszeiten gelegt werden
+- an Urlaubstagen sind Live- und manuelle Arbeitszeiteinträge gesperrt
+- Jahresurlaubskontingent, gebuchte Urlaubstage und Resturlaub
+- sofortige Reduzierung des Zeitkontos bei gebuchtem Überstundenabbau
+- bestätigungspflichtige Vorschläge für Überstundenabbau
+- Tagesnotizen
+- PDF-Monatsbericht mit exakten Arbeits- und Pausenzeiten
 - JSON-Backup und Wiederherstellung in beiden Speicherarten
 - installierbare PWA im Produktionsbetrieb
 - E-Mail/Passwort-Registrierung ohne externen Authentifizierungsanbieter
@@ -29,9 +34,9 @@ Beide Modi verwenden dieselbe Oberfläche, dieselbe Berechnungslogik und denselb
 
 Voraussetzungen:
 
-- Node.js 22.12 oder neuer; empfohlen Node.js 24 LTS
+- Node.js ab Version 22.12, empfohlen Node.js 24 LTS
 - npm
-- moderner Browser
+- aktueller Chrome, Edge, Firefox oder Safari
 
 ```bash
 npm install
@@ -44,53 +49,89 @@ Windows kann alternativ `start-windows.cmd`, macOS/Linux `./start.sh` verwenden.
 
 ## Schnellstart mit PostgreSQL
 
-Die ausführliche Anleitung steht in [DATABASE_SETUP.md](DATABASE_SETUP.md).
+Die ausführliche Einrichtung steht in [DATABASE_SETUP.md](DATABASE_SETUP.md).
 
-Kurzfassung für die lokale Entwicklung:
+Lokale Entwicklungsvariante:
 
 ```bash
 cp .env.example .env
-# Windows: copy .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
 
 docker compose up -d
 npm install
 npm run dev:full
 ```
 
-Danach `http://localhost:5173` öffnen, **Datenbank-Server** auswählen und als API-Adresse verwenden:
+Danach `http://localhost:5173` öffnen, **Datenbank-Server** auswählen und als API-Adresse eintragen:
 
 ```text
 http://localhost:3001/api
 ```
 
-Beim ersten Aufruf wird über die Oberfläche ein Konto mit Anzeigename, E-Mail-Adresse und Passwort angelegt.
+Beim ersten Start wird direkt in TimePilot ein Konto mit Anzeigename, E-Mail-Adresse und Passwort angelegt.
 
 ## Komplettbetrieb mit Docker
 
-Diese Variante baut das Frontend und startet App-Server und PostgreSQL gemeinsam:
-
 ```bash
 cp .env.example .env
-# In .env unbedingt POSTGRES_PASSWORD ändern.
+# POSTGRES_PASSWORD in .env unbedingt ändern.
 docker compose -f docker-compose.full.yml up --build
 ```
 
-Danach `http://localhost:3001` öffnen. Die Standard-API-Adresse lautet dort automatisch `http://localhost:3001/api`.
+Danach ist die komplette App unter `http://localhost:3001` erreichbar.
+
+## Bedienregeln
+
+### Arbeitspläne
+
+Arbeitspläne besitzen einen Gültigkeitszeitraum und dürfen sich nicht überschneiden. Jeder Plan kann bearbeitet oder gelöscht werden – auch der letzte Plan.
+
+Für Tage ohne gültigen Arbeitsplan gilt:
+
+- Tagessoll: `0:00` Stunden
+- vorhandene historische oder manuelle Arbeitszeit bleibt sichtbar
+- die Live-Zeiterfassung kann nicht neu gestartet werden
+
+### Kalender und Abwesenheitszeitraum
+
+Beim Anklicken eines Kalendertages wird zuerst das Feld **Von** im Abwesenheitsformular gesetzt. Der nächste Kalenderklick setzt **Bis**. Danach beginnt die Auswahl wieder beim Feld **Von**.
+
+### Urlaub und Arbeitszeiten
+
+- Bestehende Arbeitszeiten verhindern einen Urlaubseintrag für denselben Tag.
+- Eingetragener Urlaub verhindert neue Live- und manuelle Arbeitszeiten.
+- Diese Regel wird im Servermodus zusätzlich serverseitig validiert.
+
+### Überstundenabbau
+
+Überstundenabbau erhält keine normale Abwesenheitsgutschrift. Stattdessen wird das Tagessoll des gebuchten Tages vom Zeitkonto abgezogen. Zukünftig gebuchte Abbautage reduzieren den angezeigten verfügbaren Saldo sofort.
+
+### PDF-Export
+
+Der Monatsbericht enthält:
+
+- Monatskalender
+- Soll-, Arbeits-, Pausen- und Saldozeiten
+- Arbeitsbeginn und Arbeitsende
+- einzelne Pausenintervalle mit Uhrzeiten
+- Feiertage und Abwesenheiten
+- Überstundenabbau
+- Tagesbemerkungen
+
+Die PDF-Datei wird mit jsPDF direkt im Browser erzeugt und funktioniert deshalb in beiden Speicherarten identisch.
 
 ## Wichtige npm-Befehle
 
 | Befehl | Zweck |
 |---|---|
-| `npm run dev` | nur Frontend; Browser-Modus ohne Datenbank |
-| `npm run dev:full` | Frontend und API für lokale Entwicklung |
+| `npm run dev` | nur Frontend; Browsermodus ohne Datenbank |
+| `npm run dev:full` | Frontend und API gemeinsam für lokale Entwicklung |
 | `npm run dev:server` | nur API mit automatischem Neustart |
 | `npm run build` | TypeScript prüfen und Produktionsfrontend bauen |
 | `npm start` | API starten und vorhandenes `dist/` ausliefern |
-| `npm run db:migrate` | ausstehende SQL-Migrationen anwenden |
+| `npm run db:migrate` | SQL-Migrationen anwenden |
 | `npm run db:reset` | alle Benutzer und Daten nach Bestätigung löschen |
-| `npm run check` | TypeScript- und Servertests ausführen |
-
-Der Server führt ausstehende Migrationen auch bei jedem Start automatisch aus.
+| `npm run check` | TypeScript-Prüfung und Servertests |
 
 ## Architektur
 
@@ -106,9 +147,9 @@ React + TypeScript + Vite
                                    └── PostgreSQL
 ```
 
-Die Oberfläche arbeitet immer mit demselben `AppData`-Modell. Die beiden Adapter in `src/lib/data-store.ts` kapseln die Speicherart. Dadurch bleiben Kalender, Berechnungen, PDF-Export und JSON-Import unabhängig vom gewählten Speicher.
+Die Oberfläche arbeitet in beiden Modi mit demselben `AppData`-Modell. Kalender, Zeitberechnung, Geschäftsregeln, PDF-Export und JSON-Import sind daher unabhängig von der Speicherart.
 
-Im Servermodus werden die Daten nicht als einzelner JSON-Blob gespeichert. PostgreSQL verwendet getrennte Tabellen für:
+Im Servermodus werden die Daten normalisiert gespeichert:
 
 - Benutzer und Sitzungen
 - Zeitereignisse
@@ -117,48 +158,39 @@ Im Servermodus werden die Daten nicht als einzelner JSON-Blob gespeichert. Postg
 - Tagesnotizen
 - Feiertags-Cache
 
-Ein Speichervorgang ersetzt den konsistenten Benutzerstand innerhalb einer Datenbanktransaktion. Eine Revisionsnummer verhindert, dass eine ältere Browser-Sitzung neuere Serverdaten unbemerkt überschreibt.
+Ein Speichervorgang läuft innerhalb einer Datenbanktransaktion. Eine Revisionsnummer verhindert, dass eine ältere Sitzung neuere Daten unbemerkt überschreibt.
 
 ## Authentifizierung
 
-- Registrierung erfolgt direkt bei TimePilot mit E-Mail-Adresse und Passwort.
-- Passwörter werden mit Node.js `scrypt` und individuellem Salt gehasht.
-- Sitzungs-Token werden zufällig erzeugt; in PostgreSQL liegt nur der SHA-256-Hash des Tokens.
-- Sitzungen laufen standardmäßig nach 30 Tagen ab.
-- Registrierung und Login besitzen ein einfaches serverseitiges In-Memory-Versuchslimit.
-- Konten und Fachdaten sind über `user_id` voneinander getrennt.
+- Registrierung direkt in TimePilot mit E-Mail-Adresse und Passwort
+- Passwörter mit Node.js `scrypt` und individuellem Salt
+- zufällige Sitzungstoken; in PostgreSQL liegt nur der SHA-256-Hash
+- Sitzungsdauer standardmäßig 30 Tage
+- einfaches Login- und Registrierungslimit
+- vollständige Datentrennung über `user_id`
 
-Die App versendet derzeit keine Bestätigungs- oder Passwort-zurücksetzen-E-Mails. Für einen öffentlich erreichbaren Produktivbetrieb sollten zusätzlich TLS, ein zentraler Rate-Limiter am Reverse Proxy, E-Mail-Verifikation und ein sicherer Wiederherstellungsprozess ergänzt werden.
-
-## Datenübernahme zwischen den Modi
-
-1. In **Einstellungen → Datensicherung** ein JSON-Backup exportieren.
-2. Speichermodus wechseln.
-3. Im anderen Modus das Backup importieren.
-4. Im Servermodus den Synchronisierungsstatus am unteren Fensterrand kontrollieren.
-
-## PDF-Export
-
-Der Monatsbericht wird im Browser mit jsPDF erzeugt. Deshalb funktioniert der PDF-Export in beiden Speicherarten identisch und benötigt keinen zusätzlichen PDF-Dienst auf dem Server.
+Für einen öffentlich erreichbaren Produktivbetrieb sollten zusätzlich HTTPS, E-Mail-Verifikation, Passwort-Wiederherstellung und ein zentraler Rate-Limiter eingerichtet werden.
 
 ## Projektstruktur
 
 ```text
 src/
-  App.tsx                 Startmodus, Login und Synchronisierung
-  TimePilotApp.tsx        vollständige Fachoberfläche
+  App.tsx                 Startmodus, Registrierung, Login und Synchronisierung
+  TimePilotApp.tsx        vollständige Fachoberfläche und Geschäftsregeln
+  styles.css              modernes responsives Dashboard-Design
   lib/data-store.ts       Browser- und Serveradapter
-  lib/time.ts             Arbeitszeit- und Sollzeitberechnung
-  lib/pdf.ts              PDF-Monatsbericht
+  lib/time.ts             Arbeitszeit-, Pausen-, Soll- und Saldoberechnung
+  lib/pdf.ts              PDF-Monatsbericht mit Zeitfenstern
 server/
   migrations/             PostgreSQL-Schema
   src/index.mjs           HTTP-API und statische Auslieferung
   src/auth.mjs            Passwort- und Sitzungslogik
   src/data.mjs            Laden und transaktionales Speichern
-  src/validation.mjs      serverseitige Datenvalidierung
+  src/validation.mjs      serverseitige Daten- und Konfliktvalidierung
 ```
 
-## Weiterführende Anleitungen
+## Weitere Anleitungen
 
-- [INSTALLATION.md](INSTALLATION.md) – Installation und erste Tests
-- [DATABASE_SETUP.md](DATABASE_SETUP.md) – PostgreSQL- und Servereinrichtung, Docker, Backups und Produktion
+- [INSTALLATION.md](INSTALLATION.md) – Installation und Funktionstest
+- [DATABASE_SETUP.md](DATABASE_SETUP.md) – PostgreSQL, Docker, Backups und Produktivbetrieb
+- [CHANGELOG.md](CHANGELOG.md) – Änderungen der aktuellen Version

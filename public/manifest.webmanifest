@@ -1,6 +1,6 @@
 {
-  "name": "Zeiterfassung",
-  "short_name": "Zeiterfassung",
+  "name": "TimePilot Zeiterfassung",
+  "short_name": "TimePilot",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f3f6fb",

@@ -19,5 +19,5 @@ export function decimalHoursToLabel(hours: number): string {
 }
 
 export function absenceLabel(type: 'vacation' | 'sick' | 'overtime'): string {
-  return type === 'vacation' ? 'Urlaub' : type === 'sick' ? 'Krankheit' : 'Überstundenausgleich';
+  return type === 'vacation' ? 'Urlaub' : type === 'sick' ? 'Krankheit' : 'Überstundenabbau';
 }

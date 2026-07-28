@@ -71,6 +71,7 @@ export interface DaySummary {
   targetMinutes: number;
   workedMinutes: number;
   creditedMinutes: number;
+  overtimeDeductionMinutes: number;
   breakMinutes: number;
   balanceMinutes: number;
   holiday?: Holiday;

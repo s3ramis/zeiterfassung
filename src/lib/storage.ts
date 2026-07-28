@@ -1,5 +1,5 @@
 import type { AppData, WorkPlanDayHours } from '../types';
-import { localDateString } from './date';
+import { localDateString, timestampDate } from './date';
 
 const STORAGE_KEY = 'timepilot.app-data.v1';
 
@@ -66,9 +66,26 @@ export function exportData(data: AppData): void {
 export async function importData(file: File): Promise<AppData> {
   const text = await file.text();
   const parsed = JSON.parse(text) as AppData;
-  if (parsed.version !== 1 || !Array.isArray(parsed.events) || !Array.isArray(parsed.workPlans)) {
+  if (
+    parsed.version !== 1
+    || !Array.isArray(parsed.events)
+    || !Array.isArray(parsed.absences)
+    || !Array.isArray(parsed.workPlans)
+    || typeof parsed.notes !== 'object'
+    || parsed.notes === null
+  ) {
     throw new Error('Die Datei ist kein gültiges TimePilot-Backup.');
   }
+
+  const eventDates = new Set(parsed.events.map((event) => timestampDate(event.timestamp)));
+  const conflictingVacation = parsed.absences.find((absence) => {
+    if (absence.type !== 'vacation') return false;
+    return [...eventDates].some((date) => date >= absence.from && date <= absence.to);
+  });
+  if (conflictingVacation) {
+    throw new Error('Das Backup enthält Urlaub an Tagen mit bereits erfassten Arbeitszeiten.');
+  }
+
   return parsed;
 }
 

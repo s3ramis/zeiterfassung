@@ -3,6 +3,18 @@ const EVENT_TYPES = new Set(['CLOCK_IN', 'BREAK_START', 'BREAK_END', 'CLOCK_OUT'
 const ABSENCE_TYPES = new Set(['vacation', 'sick', 'overtime']);
 const SOURCES = new Set(['timer', 'manual', undefined]);
 
+const BERLIN_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Berlin',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+function berlinDateFromTimestamp(value) {
+  const parts = Object.fromEntries(BERLIN_DATE_FORMATTER.formatToParts(new Date(value)).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -30,7 +42,7 @@ export function validateAppData(data) {
   assert(data.version === 1, 'Nicht unterstützte Datenversion.');
   assert(Array.isArray(data.events), 'events muss eine Liste sein.');
   assert(Array.isArray(data.absences), 'absences muss eine Liste sein.');
-  assert(Array.isArray(data.workPlans) && data.workPlans.length > 0, 'Mindestens ein Arbeitsplan ist erforderlich.');
+  assert(Array.isArray(data.workPlans), 'workPlans muss eine Liste sein.');
   assert(data.notes && typeof data.notes === 'object' && !Array.isArray(data.notes), 'notes muss ein Objekt sein.');
   assert(data.settings && typeof data.settings === 'object', 'settings fehlt.');
   assert(data.holidayCache && typeof data.holidayCache === 'object', 'holidayCache fehlt.');
@@ -38,7 +50,7 @@ export function validateAppData(data) {
   assert(typeof data.settings.employeeName === 'string' && data.settings.employeeName.trim().length >= 1, 'Name fehlt.');
   assert(/^DE-[A-Z]{2}$/.test(data.settings.federalState), 'Ungültiges Bundesland.');
   assert(Number.isInteger(data.settings.annualLeaveDays) && data.settings.annualLeaveDays >= 0 && data.settings.annualLeaveDays <= 366, 'Ungültiger Jahresurlaub.');
-  assert(['schedule', 'fixed8'].includes(data.settings.holidayCreditMode), 'Ungültige Feiertagsgutschrift.');
+  assert(['schedule', 'fixed8'].includes(data.settings.holidayCreditMode), 'Ungültige Feiertagsbewertung.');
 
   const ids = new Set();
   for (const event of data.events) {
@@ -56,6 +68,12 @@ export function validateAppData(data) {
     assert(validIsoDate(absence.from) && validIsoDate(absence.to) && absence.from <= absence.to, 'Ungültiger Abwesenheitszeitraum.');
     assert(validIsoTimestamp(absence.createdAt), 'Ungültiges Erstellungsdatum der Abwesenheit.');
     assert(typeof absence.note === 'string' && absence.note.length <= 5000, 'Ungültige Abwesenheitsnotiz.');
+  }
+
+  const vacationRanges = data.absences.filter((absence) => absence.type === 'vacation');
+  for (const event of data.events) {
+    const eventDate = berlinDateFromTimestamp(event.timestamp);
+    assert(!vacationRanges.some((absence) => eventDate >= absence.from && eventDate <= absence.to), 'Urlaub darf nicht mit vorhandenen Arbeitszeiten überlappen.');
   }
 
   const sortedPlans = [...data.workPlans].sort((a, b) => a.validFrom.localeCompare(b.validFrom));
