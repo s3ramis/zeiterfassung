@@ -14,10 +14,11 @@
     "db:migrate": "node server/scripts/migrate.mjs",
     "db:reset": "node server/scripts/reset.mjs",
     "check": "tsc --noEmit && node --test server/src/*.test.mjs",
+    "test:integration": "node server/scripts/integration.mjs",
     "dev:full": "node scripts/dev.mjs"
   },
   "dependencies": {
-    "jspdf": "^3.0.0",
+    "jspdf": "^4.2.1",
     "pg": "^8.13.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

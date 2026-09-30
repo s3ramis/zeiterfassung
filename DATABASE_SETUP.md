@@ -1,5 +1,7 @@
 # PostgreSQL- und TimePilot-Server einrichten
 
+**Empfohlen für Windows-Einzelplatzbetrieb:** [WINDOWS_LOCAL_SETUP.md](WINDOWS_LOCAL_SETUP.md) beschreibt die automatisierte Einrichtung ohne vorinstalliertes Node.js, Docker oder PostgreSQL. Der [Installer](install-local-windows.cmd) richtet lokale Hintergrunddienste und tägliche Sicherungen ein. Siehe auch [DATABASE_READINESS.md](DATABASE_READINESS.md).
+
 Diese Anleitung beschreibt drei Betriebsvarianten:
 
 1. komplette App mit Docker
@@ -34,7 +36,7 @@ POSTGRES_PASSWORD=ein_langes_zufaelliges_passwort
 Starten:
 
 ```bash
-docker compose -f docker-compose.full.yml up --build
+docker compose -f docker-compose.full.yml up --build -d
 ```
 
 Im Browser öffnen:
@@ -57,6 +59,8 @@ Danach ein Konto mit Anzeigename, E-Mail-Adresse und Passwort anlegen.
 - `app`: React-Build, Node.js-API und statische Auslieferung
 - automatische SQL-Migrationen beim Serverstart
 - persistentes Docker-Volume `timepilot_postgres_data`
+- PostgreSQL ohne veröffentlichten Host-Port; HTTP nur unter 127.0.0.1 erreichbar
+- `-d` verhindert eine laufende Vordergrundkonsole; unter Windows muss Docker Desktop dennoch laufen und entsprechend für Autostart konfiguriert sein. Für Dienstbetrieb ohne Desktop-Abhängigkeit die native Windows-Variante verwenden.
 
 ### Stoppen
 
@@ -169,11 +173,11 @@ npm start
 ## Umgebungsvariablen
 
 | Variable | Bedeutung | Standard |
-|---|---|---|
+| --- | --- | --- |
 | `DATABASE_URL` | vollständige PostgreSQL-Verbindungsadresse | erforderlich, sofern keine `PG*`-Variablen verwendet werden |
 | `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` | alternative Einzelwerte | optional |
 | `PORT` | HTTP-Port des TimePilot-Servers | `3001` |
-| `HOST` | Bind-Adresse | `0.0.0.0` |
+| `HOST` | Bind-Adresse | `127.0.0.1`; nur im Container intern `0.0.0.0` |
 | `CORS_ORIGINS` | erlaubte Browser-Ursprünge, kommasepariert | `http://localhost:5173` |
 | `SESSION_DAYS` | Gültigkeit einer Sitzung | `30` |
 | `DB_POOL_SIZE` | maximale PostgreSQL-Verbindungen | `10` |

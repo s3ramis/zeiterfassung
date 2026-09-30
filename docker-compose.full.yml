@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: timepilot
       POSTGRES_USER: timepilot
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Setze ein eigenes POSTGRES_PASSWORD in .env}
     volumes:
       - timepilot_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,13 +25,13 @@ services:
       PGPORT: 5432
       PGDATABASE: timepilot
       PGUSER: timepilot
-      PGPASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Setze ein eigenes POSTGRES_PASSWORD in .env}
       PORT: 3001
       HOST: 0.0.0.0
       CORS_ORIGINS: http://localhost:3001,http://127.0.0.1:3001
       SESSION_DAYS: 30
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
 
 volumes:
   timepilot_postgres_data:

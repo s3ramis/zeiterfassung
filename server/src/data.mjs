@@ -25,44 +25,63 @@ export function createDefaultData(employeeName = 'Alex') {
   };
 }
 
-export async function loadUserData(poolOrClient, userId) {
-  const [userResult, eventResult, absenceResult, planResult, dayResult, noteResult, cacheResult] = await Promise.all([
-    poolOrClient.query(
+export async function loadUserData(pool, userId) {
+  const client = await pool.connect();
+  try {
+    // Data and revision must describe the same committed snapshot.
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const result = await readUserSnapshot(client, userId);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function readUserSnapshot(poolOrClient, userId) {
+  const results = [];
+  const queries = [
+    () => poolOrClient.query(
       `SELECT employee_name, federal_state, annual_leave_days, holiday_credit_mode, data_revision
          FROM users WHERE id = $1`,
       [userId],
     ),
-    poolOrClient.query(
+    () => poolOrClient.query(
       `SELECT id, event_type, occurred_at, source
          FROM time_events WHERE user_id = $1 ORDER BY occurred_at, id`,
       [userId],
     ),
-    poolOrClient.query(
+    () => poolOrClient.query(
       `SELECT id, absence_type, date_from::text, date_to::text, note, created_at
          FROM absences WHERE user_id = $1 ORDER BY date_from, id`,
       [userId],
     ),
-    poolOrClient.query(
+    () => poolOrClient.query(
       `SELECT id, name, valid_from::text, valid_to::text
          FROM work_plans WHERE user_id = $1 ORDER BY valid_from, id`,
       [userId],
     ),
-    poolOrClient.query(
+    () => poolOrClient.query(
       `SELECT wpd.work_plan_id, wpd.weekday, wpd.minutes
          FROM work_plan_days wpd
-         JOIN work_plans wp ON wp.id = wpd.work_plan_id
+         JOIN work_plans wp ON wp.id = wpd.work_plan_id AND wp.user_id = wpd.user_id
         WHERE wp.user_id = $1`,
       [userId],
     ),
-    poolOrClient.query(
+    () => poolOrClient.query(
       `SELECT work_date::text, note FROM daily_notes WHERE user_id = $1 ORDER BY work_date`,
       [userId],
     ),
-    poolOrClient.query(
+    () => poolOrClient.query(
       `SELECT cache_key, loaded_at, source, holidays FROM holiday_cache WHERE user_id = $1`,
       [userId],
     ),
-  ]);
+  ];
+  for (const query of queries) results.push(await query());
+  const [userResult, eventResult, absenceResult, planResult, dayResult, noteResult, cacheResult] = results;
 
   if (!userResult.rowCount) throw Object.assign(new Error('Benutzerkonto nicht gefunden.'), { statusCode: 404 });
   const user = userResult.rows[0];
@@ -150,8 +169,8 @@ async function insertData(client, userId, data) {
     );
     for (let weekday = 0; weekday <= 6; weekday += 1) {
       await client.query(
-        `INSERT INTO work_plan_days(work_plan_id, weekday, minutes) VALUES($1, $2, $3)`,
-        [plan.id, weekday, Math.round(Number(plan.hoursByWeekday[weekday]) * 60)],
+        `INSERT INTO work_plan_days(user_id, work_plan_id, weekday, minutes) VALUES($1, $2, $3, $4)`,
+        [userId, plan.id, weekday, Math.round(Number(plan.hoursByWeekday[weekday]) * 60)],
       );
     }
   }

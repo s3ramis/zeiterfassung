@@ -16,7 +16,7 @@ function berlinDateFromTimestamp(value) {
 }
 
 function assert(condition, message) {
-  if (!condition) throw new Error(message);
+  if (!condition) throw Object.assign(new Error(message), { statusCode: 400 });
 }
 
 function validIsoDate(value) {
@@ -38,6 +38,15 @@ function rangeEnd(value) {
 }
 
 export function validateAppData(data) {
+  try {
+    return validateDataStructure(data);
+  } catch (error) {
+    if (error?.statusCode === 400) throw error;
+    throw Object.assign(new Error('Ungültige Datenstruktur.'), { statusCode: 400 });
+  }
+}
+
+function validateDataStructure(data) {
   assert(data && typeof data === 'object', 'Ungültiger Datensatz.');
   assert(data.version === 1, 'Nicht unterstützte Datenversion.');
   assert(Array.isArray(data.events), 'events muss eine Liste sein.');

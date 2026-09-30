@@ -23,7 +23,7 @@ const sessionCleanup = setInterval(() => {
 sessionCleanup.unref();
 
 const port = Number(process.env.PORT ?? 3001);
-const host = process.env.HOST ?? '0.0.0.0';
+const host = process.env.HOST ?? '127.0.0.1';
 
 const loginAttempts = new Map();
 function rateLimit(key, limit, windowMs) {
@@ -58,7 +58,10 @@ const server = http.createServer(async (request, response) => {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('X-Frame-Options', 'DENY');
   response.setHeader('Referrer-Policy', 'same-origin');
-  applyCors(request, response);
+  if (!applyCors(request, response)) {
+    sendJson(response, 403, { error: 'Dieser Browser-Ursprung ist nicht erlaubt.' });
+    return;
+  }
   if (request.method === 'OPTIONS') {
     response.writeHead(204);
     response.end();

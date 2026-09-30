@@ -21,22 +21,30 @@ export async function readJson(request, maxBytes = 8 * 1024 * 1024) {
     chunks.push(chunk);
   }
   if (!chunks.length) return {};
+  let parsed;
   try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
     throw Object.assign(new Error('Ungültiges JSON.'), { statusCode: 400 });
   }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw Object.assign(new Error('Die Anfrage muss ein JSON-Objekt enthalten.'), { statusCode: 400 });
+  }
+  return parsed;
 }
 
 export function applyCors(request, response) {
   const origin = request.headers.origin;
   const allowed = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((value) => value.trim());
+  // CORS headers alone do not stop cross-origin requests reaching local services.
+  if (origin && !allowed.includes(origin) && !allowed.includes('*')) return false;
   if (origin && (allowed.includes(origin) || allowed.includes('*'))) {
     response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Vary', 'Origin');
   }
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  return true;
 }
 
 const MIME_TYPES = {

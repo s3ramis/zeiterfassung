@@ -173,6 +173,27 @@ function DataBackedApp({ store, user, serverUrl, onChangeMode, onLogout }: DataB
   const latestStore = useRef(store);
   const lastSaved = useRef('');
   const saveQueue = useRef(Promise.resolve());
+  const pendingSaves = useRef(0);
+  const autosaveTimer = useRef<number | undefined>(undefined);
+  const operationInProgress = useRef(false);
+  const currentData = useRef(data);
+  currentData.current = data;
+
+  function cancelAutosave(): void {
+    window.clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = undefined;
+  }
+
+  useEffect(() => {
+    const warnBeforeClose = (event: BeforeUnloadEvent) => {
+      if (currentData.current && JSON.stringify(currentData.current) !== lastSaved.current) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warnBeforeClose);
+    return () => window.removeEventListener('beforeunload', warnBeforeClose);
+  }, []);
 
   useEffect(() => { latestStore.current = store; }, [store]);
 
@@ -196,8 +217,9 @@ function DataBackedApp({ store, user, serverUrl, onChangeMode, onLogout }: DataB
 
   function queueSave(snapshot: AppData): Promise<void> {
     const serialized = JSON.stringify(snapshot);
-    if (serialized === lastSaved.current) return saveQueue.current;
+    if (serialized === lastSaved.current && pendingSaves.current === 0) return saveQueue.current;
 
+    pendingSaves.current += 1;
     setSyncState('saving');
     setSyncMessage(store.mode === 'server' ? 'Wird zum Server übertragen …' : 'Wird gespeichert …');
     const task = saveQueue.current
@@ -206,8 +228,11 @@ function DataBackedApp({ store, user, serverUrl, onChangeMode, onLogout }: DataB
         if (serialized === lastSaved.current) return;
         await latestStore.current.save(snapshot);
         lastSaved.current = serialized;
-        setSyncState('saved');
-        setSyncMessage(store.mode === 'server' ? 'Mit Server synchronisiert' : 'Im Browser gespeichert');
+        const upToDate = serialized === JSON.stringify(currentData.current);
+        setSyncState(upToDate ? 'saved' : 'saving');
+        setSyncMessage(upToDate
+          ? store.mode === 'server' ? 'Mit Server synchronisiert' : 'Im Browser gespeichert'
+          : 'Weitere Änderungen werden gespeichert …');
       })
       .catch((error: unknown) => {
         const message = error instanceof ApiError && error.status === 409
@@ -216,27 +241,33 @@ function DataBackedApp({ store, user, serverUrl, onChangeMode, onLogout }: DataB
         setSyncState('error');
         setSyncMessage(message);
         throw error;
-      });
+      })
+      .finally(() => { pendingSaves.current -= 1; });
     saveQueue.current = task;
     return task;
   }
 
   useEffect(() => {
-    if (!data || JSON.stringify(data) === lastSaved.current) return;
-    const timer = window.setTimeout(() => {
+    if (!data || operationInProgress.current || (JSON.stringify(data) === lastSaved.current && pendingSaves.current === 0)) return;
+    autosaveTimer.current = window.setTimeout(() => {
+      autosaveTimer.current = undefined;
       void queueSave(data).catch(() => undefined);
     }, 350);
-    return () => window.clearTimeout(timer);
+    return cancelAutosave;
   }, [data, store.mode]);
 
   async function saveBefore(action: () => void | Promise<void>): Promise<void> {
-    if (!data) return;
+    if (!data || operationInProgress.current) return;
+    operationInProgress.current = true;
+    cancelAutosave();
     try {
       await queueSave(data);
       await action();
     } catch {
       const continueAnyway = window.confirm('Die letzten Änderungen konnten nicht gespeichert werden. Trotzdem fortfahren?');
       if (continueAnyway) await action();
+    } finally {
+      operationInProgress.current = false;
     }
   }
 
@@ -264,6 +295,7 @@ function DataBackedApp({ store, user, serverUrl, onChangeMode, onLogout }: DataB
   }
 
   const updateData: React.Dispatch<React.SetStateAction<AppData>> = (next) => {
+    if (operationInProgress.current) return;
     setData((previous) => {
       if (!previous) return previous;
       return typeof next === 'function' ? next(previous) : next;
@@ -278,12 +310,19 @@ function DataBackedApp({ store, user, serverUrl, onChangeMode, onLogout }: DataB
       onChangeMode={() => { void saveBefore(onChangeMode); }}
       onLogout={onLogout ? () => saveBefore(onLogout) : undefined}
       onReset={async () => {
-        await saveQueue.current.catch(() => undefined);
-        const reset = await store.reset();
-        lastSaved.current = JSON.stringify(reset);
-        setData(reset);
-        setSyncState('saved');
-        setSyncMessage(store.mode === 'server' ? 'Serverdaten wurden zurückgesetzt' : 'Browserdaten wurden zurückgesetzt');
+        if (operationInProgress.current) return;
+        operationInProgress.current = true;
+        cancelAutosave();
+        try {
+          await saveQueue.current.catch(() => undefined);
+          const reset = await store.reset();
+          lastSaved.current = JSON.stringify(reset);
+          setData(reset);
+          setSyncState('saved');
+          setSyncMessage(store.mode === 'server' ? 'Serverdaten wurden zurückgesetzt' : 'Browserdaten wurden zurückgesetzt');
+        } finally {
+          operationInProgress.current = false;
+        }
       }}
     />
   );

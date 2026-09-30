@@ -1,5 +1,11 @@
 # Installation und erster Test
 
+## Windows-Einzelplatzbetrieb ohne Voraussetzungen
+
+Für dauerhaften lokalen Datenbankbetrieb nicht die Entwicklungsstarter verwenden: [install-local-windows.cmd](install-local-windows.cmd) als Administrator ausführen. Die Einrichtung lädt Node.js und PostgreSQL selbst, erzeugt sichere Zugangsdaten und installiert Dienste ohne sichtbare Fenster im laufenden Betrieb. Datenbank **und App** bleiben ausschließlich lokal erreichbar.
+
+Vollständige Anleitung: [WINDOWS_LOCAL_SETUP.md](WINDOWS_LOCAL_SETUP.md). Technischer Prüfstand: [DATABASE_READINESS.md](DATABASE_READINESS.md).
+
 ## 1. Benötigte Software
 
 ### Browsermodus

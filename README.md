@@ -49,6 +49,8 @@ Windows kann alternativ `start-windows.cmd`, macOS/Linux `./start.sh` verwenden.
 
 ## Schnellstart mit PostgreSQL
 
+**Windows ohne vorinstallierte Software:** ZIP entpacken und [install-local-windows.cmd](install-local-windows.cmd) als Administrator starten. Server und lokale PostgreSQL-Datenbank laufen danach ohne offene Fenster als Windows-Dienste. Anleitung: [WINDOWS_LOCAL_SETUP.md](WINDOWS_LOCAL_SETUP.md). Prüfbericht: [DATABASE_READINESS.md](DATABASE_READINESS.md).
+
 Die ausführliche Einrichtung steht in [DATABASE_SETUP.md](DATABASE_SETUP.md).
 
 Lokale Entwicklungsvariante:
@@ -74,7 +76,8 @@ Beim ersten Start wird direkt in TimePilot ein Konto mit Anzeigename, E-Mail-Adr
 
 ```bash
 cp .env.example .env
-docker compose -f docker-compose.full.yml up --build
+# In .env zuerst POSTGRES_PASSWORD durch ein starkes eigenes Passwort ersetzen.
+docker compose -f docker-compose.full.yml up --build -d
 ```
 
 Danach ist die komplette App unter `http://localhost:3001` erreichbar.
@@ -122,7 +125,7 @@ Die PDF-Datei wird mit jsPDF direkt im Browser erzeugt und funktioniert deshalb 
 ## Wichtige npm-Befehle
 
 | Befehl | Zweck |
-|---|---|
+| --- | --- |
 | `npm run dev` | nur Frontend; Browsermodus ohne Datenbank |
 | `npm run dev:full` | Frontend und API gemeinsam für lokale Entwicklung |
 | `npm run dev:server` | nur API mit automatischem Neustart |
