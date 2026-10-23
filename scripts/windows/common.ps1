@@ -12,12 +12,64 @@ function Assert-Administrator {
 function Invoke-Checked {
     param([string]$File, [string[]]$Arguments = @())
     & $File @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "Befehl fehlgeschlagen: $File (Exit $LASTEXITCODE)" }
+    if ($LASTEXITCODE -ne 0) {
+        $exitCode = $LASTEXITCODE
+        $message = "Befehl fehlgeschlagen: $File (Exit $exitCode)"
+        if ($exitCode -eq -1073741515) {
+            $message += ' (Windows 0xC0000135: Eine benoetigte DLL konnte nicht geladen werden. Wahrscheinliche Ursachen sind die Microsoft Visual C++ x64-Laufzeit oder eine DLL der PostgreSQL-Installation. Dies ist kein Port- oder Passwortfehler. Microsoft Visual C++ Redistributable x64 reparieren oder installieren, Windows neu starten und den Installer erneut ausfuehren. Bleibt der Fehler bestehen, PostgreSQL-Binaries mit dem geprueften Installerpaket erneut installieren. Bestehende Daten nicht loeschen.)'
+        }
+        throw $message
+    }
 }
 
 function Write-Utf8 {
     param([string]$Path, [string]$Content)
     [IO.File]::WriteAllText($Path, $Content, (New-Object Text.UTF8Encoding($false)))
+}
+
+function Install-VisualCppRuntime {
+    param([string]$DownloadDir)
+    $minimumVersion = [version]'14.44.35211.0'
+    $installer = Join-Path $DownloadDir 'vc_redist.x64.exe'
+    Invoke-WebRequest -UseBasicParsing 'https://aka.ms/vc14/vc_redist.x64.exe' -OutFile $installer
+    $signature = Get-AuthenticodeSignature $installer
+    if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
+        throw 'Microsoft C++ Download hat keine gueltige Microsoft-Signatur.'
+    }
+    $info = (Get-Item -LiteralPath $installer).VersionInfo
+    $packageVersion = New-Object Version($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart)
+    if ($packageVersion -lt $minimumVersion) {
+        throw "Microsoft C++ x64 Download ist zu alt: $packageVersion. PostgreSQL 17.11 benoetigt mindestens $minimumVersion."
+    }
+    $systemDirectory = if ([Environment]::Is64BitProcess) { "$env:SystemRoot\System32" } else { "$env:SystemRoot\Sysnative" }
+    $runtimeFiles = @('vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll')
+    $installedVersions = @(foreach ($name in $runtimeFiles) {
+        $file = Get-Item -LiteralPath (Join-Path $systemDirectory $name) -ErrorAction SilentlyContinue
+        if ($file) {
+            $info = $file.VersionInfo
+            New-Object Version($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart)
+        }
+    })
+    $newestInstalled = $installedVersions | Sort-Object -Descending | Select-Object -First 1
+    if ($newestInstalled -and $newestInstalled -gt $packageVersion) {
+        if ($installedVersions.Count -ne $runtimeFiles.Count -or @($installedVersions | Where-Object { $_ -lt $minimumVersion }).Count -gt 0) {
+            throw "Neuere Microsoft C++ x64-Laufzeit $newestInstalled ist unvollstaendig. Diese Version ueber Windows 'Installierte Apps' reparieren; kein Downgrade auf $packageVersion."
+        }
+        Write-Host "Microsoft C++ x64 $newestInstalled bleibt erhalten (Download: $packageVersion)."
+        return
+    }
+    $action = if ($newestInstalled -and $newestInstalled -eq $packageVersion) { '/repair' } else { '/install' }
+    Write-Host "Microsoft C++ x64 $packageVersion einrichten ($action, PostgreSQL-Minimum $minimumVersion) ..."
+    $process = Start-Process $installer -ArgumentList $action, '/quiet', '/norestart' -Wait -PassThru
+    if ($process.ExitCode -eq 3010) { throw 'C++ Laufzeit eingerichtet. Windows neu starten, danach Einrichtung erneut ausfuehren.' }
+    if ($process.ExitCode -ne 0) { throw "C++ Einrichtung fehlgeschlagen: $($process.ExitCode)" }
+    foreach ($name in $runtimeFiles) {
+        $file = Get-Item -LiteralPath (Join-Path $systemDirectory $name) -ErrorAction SilentlyContinue
+        if (!$file) { throw "Microsoft C++ x64-Laufzeit nach Einrichtung unvollstaendig: $name fehlt. Windows neu starten und Einrichtung erneut ausfuehren." }
+        $info = $file.VersionInfo
+        $version = New-Object Version($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart)
+        if ($version -lt $minimumVersion) { throw "Microsoft C++ x64-Laufzeit nach Einrichtung zu alt: $name $version (Minimum $minimumVersion)." }
+    }
 }
 
 function Set-PrivateDirectory {

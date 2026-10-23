@@ -17,9 +17,11 @@ Das Einrichtungsfenster darf danach geschlossen werden. **Keine Startskripte und
 - Mindestens etwa **4 GB freier Speicher**, zusätzlich Platz für Daten und Sicherungen.
 - PowerShell 5.1, .NET Framework 4.6.1 oder neuer und curl gehören zu den genannten Windows-Versionen. Auf absichtlich reduzierten Windows-Abbildern können diese Systembestandteile fehlen.
 
-**Nicht vorher installieren:** Node.js, npm, PostgreSQL, Docker, WSL, Git oder eine Entwicklungsumgebung. Das Skript lädt private Laufzeiten selbst herunter; eine gegebenenfalls fehlende Microsoft-C++-Laufzeit wird automatisch installiert. Eine von Windows verlangte Administratorbestätigung ist unvermeidbar. Falls die C++-Installation einen Neustart benötigt, wird dies gemeldet: neu starten und dasselbe Skript nochmals ausführen.
+**Nicht vorher installieren:** Node.js, npm, PostgreSQL, Docker, WSL, Git oder eine Entwicklungsumgebung. Das Skript lädt private Laufzeiten selbst herunter und richtet die aktuelle Microsoft Visual C++ v14 Redistributable **x64** automatisch ein. Eine bereits gleich aktuelle Laufzeit wird repariert, nicht nur anhand eines Registry-Eintrags übersprungen. Eine von Windows verlangte Administratorbestätigung ist unvermeidbar. Falls die C++-Installation einen Neustart benötigt, wird dies gemeldet: neu starten und dasselbe Skript nochmals ausführen.
 
 Die Dateien werden aus nodejs.org, GitHub und EnterpriseDB per HTTPS bezogen. Node.js 24.21.0, PostgreSQL 17.11 und WinSW 2.12.0 sind über feste SHA-256-Prüfsummen abgesichert. Beim Microsoft-C++-Installer wird die gültige Microsoft-Signatur geprüft. Netzwerk-/Firmenrichtlinien können Downloads oder npm blockieren. Lizenzen der mitgelieferten Komponenten bleiben gültig; insbesondere benötigt diese Variante **keine Docker-Desktop-Lizenz**.
+
+Das SHA-256-geprüfte PostgreSQL-Paket 17.11-4 x64 verwendet MSVC 14.44; `initdb.exe` importiert `VCRUNTIME140.dll`, die mitgelieferte ICU-Bibliothek zusätzlich `MSVCP140.dll`. Die Laufzeitfamilie v14 ist daher richtig, eine zusätzliche VC++-2013-Laufzeit ist für diese PostgreSQL-Binaries nicht erforderlich. Der Installer verwendet [Microsofts aktuellen v14-x64-Download](https://aka.ms/vc14/vc_redist.x64.exe) gemäß der [Microsoft-Dokumentation](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). Der bisherige VS-2022-Link lieferte beim Prüflauf 14.44.35211.0, der neue Link 14.51.36247.0. Diese Downloadversion kann sich ändern; der Mindestprüfstand bleibt 14.44.35211.0. Geprüft werden die tatsächlichen x64-DLLs `vcruntime140.dll`, `vcruntime140_1.dll` und `msvcp140.dll`, auch aus einem 32-Bit-PowerShell-Prozess. Neuere vollständige Laufzeiten werden nicht herabgestuft. Eine neuere, aber unvollständige Laufzeit muss mit ihrer eigenen Version über Windows **Installierte Apps** repariert werden.
 
 ## Was automatisch eingerichtet wird
 
@@ -135,11 +137,18 @@ Danach Browseradresse `http://localhost:3010` verwenden. Bei späteren Wiederhol
 - **Administratorrechte fehlen:** Installer ausdrücklich per Rechtsklick als Administrator starten.
 - **Port belegt:** anderen Port wählen. Bestehende fremde Dienste werden nicht beendet oder geändert.
 - **Download/Prüfsumme fehlgeschlagen:** Verbindung/Proxy prüfen und erneut starten; falsche Downloads werden nicht ausgeführt.
+- **PostgreSQL kann eine DLL nicht laden (Exit -1073741515 / 0xC0000135):** Das ist ein Windows-Ladefehler, kein Port- oder Passwortproblem. Den aktualisierten TimePilot-Installer mit denselben Ports und demselben Installationsordner erneut als Administrator ausführen; er installiert beziehungsweise repariert die aktuelle Microsoft Visual C++ v14 Redistributable x64. Einen angeforderten Windows-Neustart durchführen und die Einrichtung wiederholen. Bei einer neueren, unvollständigen C++-Laufzeit die gemeldete Version über Windows **Installierte Apps** reparieren. Daten, `secrets.json` und Backups nicht löschen. Bleibt der Fehler bestehen, PostgreSQL-Laufzeitpaket und Installationsdiagnose prüfen; keine einzelnen DLL-Dateien aus Fremdquellen ergänzen.
 - **Dienst startet nicht:** Unterordner **logs/app** und **logs/postgres** prüfen. Logdateien werden größenbegrenzt rotiert.
 - **Unvollständiges initdb:** Ohne fertigen PostgreSQL-Cluster wird ein nicht leerer Datenordner vorsichtshalber nicht gelöscht. Diagnose prüfen; nur bei nachweislich fehlgeschlagener, datenloser Erstinstallation den Ordner **data** administrativ entfernen und erneut einrichten.
 - **Zugangsdaten verloren:** Nicht einfach neue Passwörter in die Konfiguration schreiben. Geschützte Zugangsdaten aus Sicherung wiederherstellen oder eine frische Installation mit anschließendem Dump-Restore vornehmen.
 - **Fenster im Betrieb:** Die älteren Entwicklungsstartskripte nicht verwenden. Sie sind kein Dienstbetrieb. Der neue Installer darf nur während der Einrichtung eine Konsole anzeigen.
 
 ## Prüfstand
+
+Die isolierten Runtime-Regressionstests benötigen weder Administratorrechte noch Downloads und ändern keine Systemdateien:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows\common.test.ps1
+```
 
 Siehe [DATABASE_READINESS.md](DATABASE_READINESS.md) für behobene Befunde, Tests und verbleibende Grenzen. Native PostgreSQL-/HTTP-Tests sind von einem kompletten Windows-Dienst-/Neustarttest zu unterscheiden; letzterer benötigt einen separaten administrativen Testrechner.

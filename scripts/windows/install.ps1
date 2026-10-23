@@ -71,18 +71,7 @@ $pgZip = Download-Verified 'https://sbp.enterprisedb.com/getfile.jsp?fileid=1260
 $wrapper = Download-Verified 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW.NET461.exe' 'WinSW.NET461.exe' 'B5066B7BBDFBA1293E5D15CDA3CAAEA88FBEAB35BD5B38C41C913D492AADFC4F'
 
 # PostgreSQL needs the Microsoft C++ runtime, even on a pristine Windows machine.
-$vcInstalled = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64' -ErrorAction SilentlyContinue
-if (!$vcInstalled -or $vcInstalled.Installed -ne 1 -or [version]$vcInstalled.Version.TrimStart('v') -lt [version]'14.44.35211.0') {
-    $vc = "$InstallDir\downloads\vc_redist.x64.exe"
-    Invoke-WebRequest -UseBasicParsing 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile $vc
-    $signature = Get-AuthenticodeSignature $vc
-    if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
-        throw 'Microsoft C++ Download hat keine gueltige Microsoft-Signatur.'
-    }
-    $process = Start-Process $vc -ArgumentList '/install', '/quiet', '/norestart' -Wait -PassThru
-    if ($process.ExitCode -eq 3010) { throw 'C++ Laufzeit installiert. Windows neu starten, danach Einrichtung erneut ausfuehren.' }
-    if ($process.ExitCode -ne 0) { throw "C++ Installation fehlgeschlagen: $($process.ExitCode)" }
-}
+Install-VisualCppRuntime "$InstallDir\downloads"
 
 Write-Host '2/7: Bestehende Daten sichern und Dienste stoppen ...'
 $dbService = Get-Service TimePilotDatabase -ErrorAction SilentlyContinue
@@ -113,6 +102,9 @@ foreach ($entry in @('package.json', 'package-lock.json', 'tsconfig.json', 'vite
 }
 Invoke-Checked "$InstallDir\node\node.exe" @('--version')
 Invoke-Checked "$InstallDir\postgres\bin\postgres.exe" @('--version')
+foreach ($tool in @('initdb', 'pg_ctl', 'pg_isready', 'psql', 'pg_dump', 'pg_restore')) {
+    Invoke-Checked "$InstallDir\postgres\bin\$tool.exe" @('--version')
+}
 $oldPath = $env:PATH
 $oldNodeEnv = $env:NODE_ENV
 $oldDefaultUrl = $env:VITE_DEFAULT_SERVER_URL
